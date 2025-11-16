@@ -1,0 +1,1 @@
+export * from '../../../../app/api/ai/jd-match/route'

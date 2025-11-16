@@ -1,0 +1,1 @@
+export { renderMarkdown } from '@/src/lib/markdown'

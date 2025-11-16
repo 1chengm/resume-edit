@@ -1,0 +1,1 @@
+export { getPrompt } from '@/src/lib/yaml-prompts'

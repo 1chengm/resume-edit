@@ -1,0 +1,1 @@
+export { createAuthenticatedClient } from '@/src/lib/api-client'

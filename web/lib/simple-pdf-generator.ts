@@ -1,0 +1,1 @@
+export { generateSimplePDF, generateResumePDFFromData, generateResumePDFBlobFromData } from '@/src/lib/simple-pdf-generator'

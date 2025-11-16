@@ -1,0 +1,1 @@
+export { sanitizeResume } from '@/src/lib/sanitize'

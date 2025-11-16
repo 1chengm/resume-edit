@@ -1,0 +1,41 @@
+# root-level ignore rules
+
+# never commit secrets
+.env.local
+web/.env.local
+
+# dependencies
+node_modules/
+
+# next.js
+web/.next/
+web/out/
+
+# build outputs
+web/build/
+
+# test & e2e artifacts
+web/coverage/
+web/playwright-report/
+web/test-results/
+web/ms-playwright/
+
+# editor/ide configs
+.vscode/
+.idea/
+
+# vercel
+web/.vercel/
+
+# typescript
+web/*.tsbuildinfo
+web/next-env.d.ts
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# supabase local temp
+supabase/.temp/

@@ -1,0 +1,1 @@
+export { createSupabaseAdminClient } from '@/src/lib/supabaseAdmin'
