@@ -1,8 +1,8 @@
 "use client"
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { getSupabaseClient } from '@/lib/supabaseClient'
-import { authenticatedFetch } from '@/lib/authenticatedFetch'
+import { getSupabaseClient } from '@/src/lib/supabaseClient'
+import { authenticatedFetch } from '@/src/lib/authenticatedFetch'
 
 export default function DashboardPage() {
   const router = useRouter()

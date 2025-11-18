@@ -2,7 +2,7 @@
 import Link from "next/link"
 import { useMemo, useRef, useState } from "react"
 import type { ResumeContent } from "@/types/resume"
-import { authenticatedFetch } from "@/lib/authenticatedFetch"
+import { authenticatedFetch } from "@/src/lib/authenticatedFetch"
 
 type ScoreItem = { name: string; score: number }
 type Suggestion = { description: string; before: string; after: string }

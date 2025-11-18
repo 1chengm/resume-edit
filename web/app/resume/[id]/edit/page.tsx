@@ -1,7 +1,7 @@
 'use client'
 import { useState, useRef, useEffect } from 'react'
 import { renderMarkdown } from '@/lib/markdown'
-import { authenticatedFetch } from '@/lib/authenticatedFetch'
+import { authenticatedFetch } from '@/src/lib/authenticatedFetch'
 
 export default function ResumeEditPage() {
   const [form, setForm] = useState({

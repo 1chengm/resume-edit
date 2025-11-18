@@ -1,7 +1,7 @@
 'use client'
 import { useRef, useState, useEffect } from 'react'
-import { authenticatedFetch } from '@/lib/authenticatedFetch'
-import { getSupabaseClient } from '@/lib/supabaseClient'
+import { authenticatedFetch } from '@/src/lib/authenticatedFetch'
+import { getSupabaseClient } from '@/src/lib/supabaseClient'
 
 export default function ExportSharePage() {
   const ref = useRef<HTMLDivElement>(null)

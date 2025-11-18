@@ -1,8 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { getSupabaseClient } from '@/lib/supabaseClient'
-import { authenticatedFetch } from '@/lib/authenticatedFetch'
+import { getSupabaseClient } from '@/src/lib/supabaseClient'
+import { authenticatedFetch } from '@/src/lib/authenticatedFetch'
 
 type Profile = { display_name?: string; avatar_url?: string }
 
@@ -61,12 +61,30 @@ export default function ProfilePage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/sign-in'); return }
       setEmail(user.email || '')
-      const { data } = await supabase.from('profiles').select('display_name,avatar_url').eq('user_id', user.id).single()
-      setProfile(data || {})
-      setNameInput((data?.display_name as string) || '')
+
+      try {
+        // 使用 API 路由而不是直接查询 Supabase
+        const response = await authenticatedFetch('/api/profile')
+        if (response.ok) {
+          const data = await response.json()
+          setProfile(data)
+          setNameInput(data.display_name || '')
+        } else {
+          console.error('Failed to fetch profile:', response.status, response.statusText)
+          // 设置默认值
+          setProfile({})
+          setNameInput('')
+        }
+      } catch (error) {
+        console.error('Error fetching profile:', error)
+        // 设置默认值
+        setProfile({})
+        setNameInput('')
+      }
+
       setLoading(false)
     })()
-  }, [router])
+  }, [router, authenticatedFetch])
 
   if (loading) return (<main className="p-8"><p>加载中...</p></main>)
 

@@ -1,0 +1,25 @@
+{
+  "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp@latest"
+      ],
+      "env": {
+        "DEFAULT_MINIMUM_TOKENS": "10000"
+      }
+    },
+    "supabase": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@supabase/mcp-server-supabase@latest",
+        "--project-ref=gjmzzcbrjxflpplvisga"
+      ],
+      "env": {
+        "SUPABASE_ACCESS_TOKEN": "sbp_62752261ee7c165cc1d2a1257ed8a7c2aae8dbcb"
+      }
+    }
+  }
+}

@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import type { JDMatch } from '@/types/ai'
 import type { ResumeContent } from '@/types/resume'
-import { authenticatedFetch } from '@/lib/authenticatedFetch'
+import { authenticatedFetch } from '@/src/lib/authenticatedFetch'
 
 export default function JDMatchPage() {
   const [resumeJson, setResumeJson] = useState('')
