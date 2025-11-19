@@ -50,36 +50,21 @@ export default function ExportSharePage() {
   }, [])
 
   async function generatePDF() {
+    const id = typeof window !== 'undefined' ? location.pathname.split('/')[2] : ''
+    if (!id) {
+      alert('无法生成 PDF：缺少简历 ID')
+      return
+    }
+    window.open(`/api/export-pdf/${id}`, '_blank');
+    
     try {
-      const { generateResumePDFFromData } = await import('@/lib/simple-pdf-generator')
-
-      // 获取简历 ID
-      const id = typeof window !== 'undefined' ? location.pathname.split('/')[2] : ''
-      if (!id) {
-        console.error('No resume ID found for PDF generation')
-        alert('无法生成 PDF：缺少简历 ID')
-        return
-      }
-
-      // 调试信息
-      console.log('Generating PDF with data:', {
-        resumeId: id,
-        hasContent: !!resumeContent,
-        hasMetadata: !!resumeMetadata,
-        contentKeys: resumeContent ? Object.keys(resumeContent) : []
-      })
-
-      // 生成简单的 PDF
-      await generateResumePDFFromData(resumeContent, resumeMetadata, { filename: 'resume.pdf' })
-
-      // 统计
+      // We still record the stat, even though generation is server-side
       await authenticatedFetch('/api/stats', {
         method: 'POST',
         body: JSON.stringify({ type: 'pdf_download', resume_id: id })
       })
     } catch (error) {
-      console.error('PDF generation failed:', error)
-      alert('PDF 生成失败，请重试')
+      console.error('Failed to record PDF download stat:', error)
     }
   }
 

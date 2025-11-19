@@ -86,52 +86,21 @@ export default function ResumeEditPage() {
   }
 
   async function generatePDF() {
+    const id = typeof window !== 'undefined' ? location.pathname.split('/')[2] : ''
+    if (!id) {
+      alert('无法生成 PDF：缺少简历 ID')
+      return
+    }
+    window.open(`/api/export-pdf/${id}`, '_blank');
+    
     try {
-      const { generateResumePDFFromData } = await import('@/lib/simple-pdf-generator')
-
-      // 获取当前简历数据
-      const id = typeof window !== 'undefined' ? location.pathname.split('/')[2] : ''
-
-      // 获取简历数据
-      const resumeData = {
-        personal: {
-          full_name: form.fullName,
-          title: form.title,
-          phone: form.phone,
-          email: form.email,
-          linkedin: form.linkedin,
-          portfolio: form.portfolio
-        },
-        summary: form.summary,
-        education: education,
-        experience: experience.map(exp => ({
-          ...exp,
-          highlights: exp.highlights.split('\n').filter(Boolean)
-        })),
-        projects: projects.map(proj => ({
-          ...proj,
-          highlights: proj.highlights.split('\n').filter(Boolean)
-        })),
-        skills: skills,
-        certificates: certs
-      }
-
-      const resumeMetadata = {
-        title: form.fullName ? `${form.fullName} 的简历` : '未命名简历',
-        template: template,
-        color_theme: color
-      }
-
-      await generateResumePDFFromData(resumeData, resumeMetadata, { filename: 'resume.pdf' })
-
-      // 统计
+      // We still record the stat, even though generation is server-side
       await authenticatedFetch('/api/stats', {
         method: 'POST',
         body: JSON.stringify({ type: 'pdf_download', resume_id: id })
       })
     } catch (error) {
-      console.error('PDF generation failed:', error)
-      alert('PDF 生成失败，请重试')
+      console.error('Failed to record PDF download stat:', error)
     }
   }
 

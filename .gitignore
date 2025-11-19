@@ -3,7 +3,8 @@
 # never commit secrets
 .env.local
 web/.env.local
-
+mcp.json
+settings.json
 # dependencies
 node_modules/
 
