@@ -1,5 +1,6 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useParams } from 'next/navigation'
 import type { JDMatch } from '@/types/ai'
 import type { ResumeContent } from '@/types/resume'
 import { authenticatedFetch } from '@/src/lib/authenticatedFetch'
@@ -9,14 +10,20 @@ export default function JDMatchPage() {
   const [jdText, setJdText] = useState('')
   const [result, setResult] = useState<JDMatch | null>(null)
   const [error, setError] = useState('')
-  const id = typeof window !== 'undefined' ? location.pathname.split('/')[2] : ''
+  const [isClient, setIsClient] = useState(false)
+  const params = useParams()
+  const id = params?.id as string
+
+  // Fix hydration error by ensuring client-side rendering
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
 
   async function match() {
     setError('')
     setResult(null)
     let content: ResumeContent
     try { content = JSON.parse(resumeJson || '{}') } catch { setError('简历 JSON 格式错误'); return }
-    const id = typeof window !== 'undefined' ? location.pathname.split('/')[2] : ''
     const res = await authenticatedFetch('/api/ai/jd-match', {
       method: 'POST',
       body: JSON.stringify({ resumeContent: content, jdText, resumeId: id })
@@ -33,7 +40,7 @@ export default function JDMatchPage() {
           <p className="text-2xl font-black">JD 匹配分析</p>
           <p className="text-gray-500 text-sm">粘贴岗位描述，查看匹配度与优化建议。</p>
         </div>
-        <a className="flex min-w-[84px] items-center justify-center gap-2 rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold hover:bg-primary/90" href={`/resume/${id}/edit`}>
+        <a className="flex min-w-[84px] items-center justify-center gap-2 rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold hover:bg-primary/90" href={isClient && id ? `/resume/${id}/edit` : '#'}>
           <span className="material-symbols-outlined">edit_document</span>
           <span className="truncate">编辑我的简历</span>
         </a>

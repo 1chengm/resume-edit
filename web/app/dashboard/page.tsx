@@ -14,12 +14,22 @@ export default function DashboardPage() {
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   const missingConfig = !url || !key
 
+  const [profile, setProfile] = useState<{ display_name: string; avatar_url: string; } | null>(null)
+  const [userEmail, setUserEmail] = useState('')
+
   useEffect(() => {
     if (missingConfig) return
     const supabase = getSupabaseClient()
     ;(async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/sign-in'); return }
+      setUserEmail(user.email || '')
+
+      const { data: profileData } = await supabase.from('profiles').select('*').eq('user_id', user.id).single()
+      if (profileData) {
+        setProfile(profileData)
+      }
+
       const { data } = await supabase.from('resumes').select('id,title,updated_at,template,color_theme').order('updated_at', { ascending: false })
       const now = Date.now()
       const mapped = (data || []).map(d => {
@@ -99,10 +109,10 @@ export default function DashboardPage() {
               </div>
               <div className="border-t border-[#EAEAEA] pt-4">
                 <a href="/profile" className="flex gap-3">
-                  <div className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10" style={{ backgroundImage: 'url(https://lh3.googleusercontent.com/aida-public/AB6AXuDpyfmYUTzn8XOHsr_t_173DsAAeMwAd6f2OomhVfHg4SPduu6DNreTVkamlbAKLIZMTmNgiqWla-gkkkWqdvpG6HGLcMhvWrBWQxhoVXKyr1V60xMA1_E4csa7CGV8VCpXIFVoMoyFeYIMB_6jqHb7eyxF3LBrthfrO8i0at_H41ngVFwXCiKGtZ0KuB-6snleIU8wBFUkxu338U-IVHeJ1FzEUp6RgbIryCXNf0xeNdbYPzh5pKfiyC5DP53n7AA_ddlk4O2tWF8)'}}></div>
+                  <div className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10" style={{ backgroundImage: `url(${profile?.avatar_url || '/default-avatar.png'})`}}></div>
                   <div className="flex flex-col">
-                    <h1 className="text-sm font-semibold">Alex Doe</h1>
-                    <p className="text-xs text-[#AAB8C2]">alex.doe@email.com</p>
+                    <h1 className="text-sm font-semibold">{profile?.display_name || '用户'}</h1>
+                    <p className="text-xs text-[#AAB8C2]">{userEmail}</p>
                   </div>
                 </a>
               </div>

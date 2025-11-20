@@ -115,7 +115,9 @@ export default function ResumeEditPage() {
     <div className="flex flex-col h-screen">
       <header className="flex items-center justify-between whitespace-nowrap border-b border-[#E9ECEF] px-6 py-3 bg-white shadow-sm">
         <div className="flex items-center gap-4">
-          <span className="material-symbols-outlined text-primary text-2xl">star</span>
+          <a href="/dashboard" className="flex items-center justify-center size-8 rounded-full hover:bg-gray-100">
+            <span className="material-symbols-outlined text-gray-600">arrow_back</span>
+          </a>
           <h2 className="text-lg font-bold">简历编辑器</h2>
           <span className="text-xs font-medium text-[#6C757D] ml-2">{savedText}</span>
         </div>

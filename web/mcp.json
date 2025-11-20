@@ -10,6 +10,15 @@
         "DEFAULT_MINIMUM_TOKENS": "10000"
       }
     },
+    "chrome-devtools": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "chrome-devtools-mcp@latest"
+      ]
+    },
     "supabase": {
       "command": "npx",
       "args": [
