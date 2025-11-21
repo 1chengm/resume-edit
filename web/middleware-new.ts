@@ -3,9 +3,6 @@ import type { NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
-// 修复：确保使用正确的导出格式
-export const runtime = 'nodejs' // 指定运行时环境
-
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 

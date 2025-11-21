@@ -14,6 +14,8 @@ export default function ProfilePage() {
   const [nameInput, setNameInput] = useState('')
   const [nameError, setNameError] = useState('')
   const [uploading, setUploading] = useState(false)
+  const [signingOut, setSigningOut] = useState(false)
+  const [signOutError, setSignOutError] = useState('')
 
   function validateName(v: string) {
     const val = v.trim()
@@ -28,6 +30,21 @@ export default function ProfilePage() {
     if (err) return
     const res = await authenticatedFetch('/api/profile', { method: 'POST', body: JSON.stringify({ display_name: nameInput }) })
     if (res.ok) setProfile(prev => ({ ...prev, display_name: nameInput }))
+  }
+
+  async function handleSignOut() {
+    setSigningOut(true)
+    setSignOutError('')
+    const supabase = getSupabaseClient()
+    try {
+      const { error } = await supabase.auth.signOut()
+      if (error) throw error
+      router.replace('/sign-in')
+    } catch (err) {
+      console.error('Sign out failed', err)
+      setSignOutError('退出失败，请稍后重试')
+      setSigningOut(false)
+    }
   }
 
   async function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -118,10 +135,16 @@ export default function ProfilePage() {
             </div>
           </div>
           <div className="mt-auto flex flex-col gap-1">
-            <a className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-100" href="#">
+            <button
+              type="button"
+              onClick={handleSignOut}
+              disabled={signingOut}
+              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-100 disabled:opacity-60 disabled:cursor-not-allowed text-left"
+            >
               <span className="material-symbols-outlined">logout</span>
-              <p className="text-sm font-medium">退出登录</p>
-            </a>
+              <p className="text-sm font-medium">{signingOut ? '退出中…' : '退出登录'}</p>
+            </button>
+            {signOutError && <p className="text-xs text-red-600 px-3">{signOutError}</p>}
           </div>
         </aside>
         <main className="flex-1 p-6 sm:p-8 md:p-10">

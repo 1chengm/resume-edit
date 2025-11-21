@@ -33,13 +33,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     getSession()
 
-    // 监听认证状态变化
+    // 监听认证状态变化 - 优化性能，减少不必要的重渲染
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('Auth state changed:', event, session?.user?.email)
-      setUser(session?.user ?? null)
-      setLoading(false)
+      
+      // 只在用户状态实际变化时更新，避免不必要的重渲染
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
+        setUser(session?.user ?? null)
+        setLoading(false)
+      }
     })
 
     return () => subscription.unsubscribe()

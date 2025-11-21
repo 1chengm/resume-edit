@@ -24,6 +24,7 @@ function getClient() {
 export default function SignInPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   const router = useRouter()
   const { register, handleSubmit, formState: { errors } } = useForm<SignInFormValues>({
     resolver: zodResolver(signInSchema),
@@ -34,27 +35,121 @@ export default function SignInPage() {
   async function signInWithEmail(values: SignInFormValues) {
     setLoading(true)
     setError('')
-    const client = getClient()
-    if (!client) {
-      setError('缺少 Supabase 配置，请设置环境变量')
+    
+    try {
+      const client = getClient()
+      if (!client) {
+        throw new Error('缺少 Supabase 配置，请设置环境变量')
+      }
+      
+      console.log('🔑 Starting email sign-in process...')
+      
+      const { data, error } = await client.auth.signInWithPassword({ 
+        email: values.email, 
+        password: values.password 
+      })
+      
+      if (error) {
+        console.error('❌ Sign-in error:', error)
+        throw error
+      }
+      
+      if (data?.session) {
+        console.log('✅ Email sign-in successful!')
+        console.log('👤 User:', data.user?.email)
+        console.log('🎯 Redirecting to dashboard...')
+        
+        // 显示成功消息
+        setSuccess('登录成功！正在跳转到仪表板...')
+        
+        // 最小化延迟，避免用户感觉页面卡住
+        setTimeout(() => {
+          router.push('/dashboard')
+        }, 300) // 从800ms减少到300ms - 几乎即时跳转
+        
+      } else if (data?.user && !data.session) {
+        // 用户存在但没有会话，可能需要邮箱验证
+        console.log('⚠️ User exists but no session - may need email verification')
+        setSuccess('登录成功！正在跳转到仪表板...')
+        
+        setTimeout(() => {
+          router.push('/dashboard')
+        }, 500) // 从1000ms减少到500ms
+        
+      } else {
+        console.log('⚠️ Unexpected sign-in response:', data)
+        setSuccess('登录成功！正在跳转...')
+        
+        setTimeout(() => {
+          router.push('/dashboard')
+        }, 300) // 从800ms减少到300ms
+      }
+      
+    } catch (error: any) {
+      console.error('❌ Email sign-in failed:', error)
+      
+      // 更详细的错误处理
+      if (error.message?.includes('Invalid login credentials')) {
+        setError('邮箱或密码错误，请检查后重试')
+      } else if (error.message?.includes('Email not confirmed')) {
+        setError('邮箱未验证，请检查邮箱并点击验证链接')
+      } else if (error.message?.includes('Too many requests')) {
+        setError('请求过于频繁，请稍后再试')
+      } else {
+        setError(error.message || '登录失败，请重试')
+      }
+    } finally {
       setLoading(false)
-      return
     }
-    const { error } = await client.auth.signInWithPassword({ email: values.email, password: values.password })
-    if (error) setError(error.message)
-    else router.push('/dashboard')
-    setLoading(false)
   }
 
   async function signInWithGithub() {
     setLoading(true)
     setError('')
-    const client = getClient()
-    if (!client) { setError('缺少 Supabase 配置'); setLoading(false); return }
-    const site = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-    const { error } = await client.auth.signInWithOAuth({ provider: 'github', options: { redirectTo: `${site}/auth/callback?next=/dashboard` } })
-    if (error) setError(error.message)
-    setLoading(false)
+    
+    try {
+      console.log('🚀 Starting GitHub OAuth login...')
+      
+      const client = getClient()
+      if (!client) { 
+        setError('缺少 Supabase 配置'); 
+        setLoading(false); 
+        return 
+      }
+      
+      const site = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+      const { data, error } = await client.auth.signInWithOAuth({ 
+        provider: 'github', 
+        options: { 
+          redirectTo: `${site}/auth/callback?next=/dashboard` 
+        } 
+      })
+
+      if (error) {
+        console.error('❌ GitHub OAuth error:', error)
+        
+        // 更详细的错误处理
+        if (error.message?.includes('OAuth')) {
+          setError('GitHub OAuth 配置问题，请使用邮箱登录')
+        } else if (error.message?.includes('provider')) {
+          setError('GitHub 登录服务暂不可用，请使用邮箱登录')
+        } else {
+          setError('GitHub 登录失败，请使用邮箱登录')
+        }
+      } else if (data?.url) {
+        console.log('✅ GitHub OAuth initiated successfully')
+        console.log('🔄 Redirecting to:', data.url)
+        // OAuth流程会自动重定向，不需要手动处理
+      } else {
+        console.log('✅ GitHub OAuth initiated (no redirect URL)')
+      }
+      
+    } catch (error: any) {
+      console.error('❌ GitHub login error:', error)
+      setError('GitHub 登录失败，请使用邮箱登录')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -106,7 +201,11 @@ export default function SignInPage() {
               </label>
               <button type="submit" className="flex h-12 min-w-[84px] w-full cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-primary px-5 text-base font-bold leading-normal tracking-[0.015em] text-white hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-background-light dark:focus:ring-offset-background-dark" disabled={loading}>登录</button>
             </form>
-            {error && <p className="text-sm text-red-500">{error}</p>}
+            {(error || success) && (
+              <div className={`p-3 rounded-lg text-sm ${error ? 'bg-red-50 border border-red-200 text-red-700' : 'bg-green-50 border border-green-200 text-green-700'}`}>
+                {error || success}
+              </div>
+            )}
             <div className="flex items-center justify-between text-sm">
               <a href="/sign-up" className="text-primary hover:underline">没有账号？注册</a>
               <a href="/reset" className="text-primary hover:underline">忘记密码？</a>

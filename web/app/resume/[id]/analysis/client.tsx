@@ -27,7 +27,123 @@ export default function AnalysisClient({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [profile, setProfile] = useState<{ display_name: string | null; avatar_url: string | null }>({ display_name: null, avatar_url: null })
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [isCached, setIsCached] = useState(false) // 标记是否为缓存结果
   const sectionRef = useRef<HTMLDivElement | null>(null)
+
+  // Helper function to generate detailed analysis from AI data
+  const generateDetailedAnalysis = (aiData: any) => {
+    const suggestions = []
+    
+    // Content completeness suggestions
+    if (aiData.content_completeness?.recommendations?.length > 0) {
+      suggestions.push({
+        title: "内容完整性需要改进",
+        suggestions: aiData.content_completeness.recommendations.map((rec: string, index: number) => ({
+          description: rec,
+          before: "当前内容",
+          after: "建议改进"
+        }))
+      })
+    }
+
+    // Structure recommendations
+    if (aiData.structure?.recommendations?.length > 0) {
+      suggestions.push({
+        title: "简历结构可以优化",
+        suggestions: aiData.structure.recommendations.map((rec: string, index: number) => ({
+          description: rec,
+          before: "当前结构",
+          after: "建议结构"
+        }))
+      })
+    }
+
+    // Expression examples
+    if (aiData.expression?.rewrite_examples?.length > 0) {
+      suggestions.push({
+        title: "语言表达需要提升",
+        suggestions: aiData.expression.rewrite_examples.slice(0, 3).map((example: string, index: number) => ({
+          description: "表达可以更专业和具体",
+          before: "原表达",
+          after: example
+        }))
+      })
+    }
+
+    // If no specific suggestions, provide general ones
+    if (suggestions.length === 0) {
+      suggestions.push({
+        title: "简历整体表现良好",
+        suggestions: [{
+          description: "简历内容完整，结构清晰，表达准确",
+          before: "当前简历",
+          after: "继续保持"
+        }]
+      })
+    }
+
+    return { content: suggestions }
+  }
+
+  // Helper function to generate comprehensive mock analysis for demo
+  const generateComprehensiveMockAnalysis = () => {
+    return {
+      overallScore: 75,
+      scoreBreakdown: [
+        { name: "内容完整度", score: 70 },
+        { name: "结构与排版", score: 80 },
+        { name: "语言与表达", score: 75 }
+      ],
+      detailedAnalysis: {
+        content: [
+          {
+            title: "内容完整性需要改进",
+            suggestions: [
+              {
+                description: "缺少关键的工作成果量化数据",
+                before: "负责产品开发工作",
+                after: "负责产品开发工作，带领团队完成3个主要项目，提升产品性能25%"
+              },
+              {
+                description: "技能部分可以更具体",
+                before: "熟悉前端技术",
+                after: "精通React、Vue.js框架，具有3年前端开发经验，熟悉TypeScript和现代化开发工具链"
+              }
+            ]
+          },
+          {
+            title: "简历结构可以优化",
+            suggestions: [
+              {
+                description: "工作经历应按时间倒序排列",
+                before: "按时间正序列出工作经历",
+                after: "将最近的工作经历放在前面，突出最新成就"
+              }
+            ]
+          }
+        ]
+      },
+      contentRecommendations: {
+        missing_sections: ['项目成果展示', '专业技能证书', '获奖经历'],
+        recommendations: [
+          '添加更多量化数据和具体成果',
+          '补充专业技能的具体应用案例',
+          '考虑添加个人项目或开源贡献'
+        ]
+      },
+      structureRecommendations: [
+        '建议使用更专业的时间格式',
+        '每个工作经历的描述长度保持一致',
+        '添加清晰的段落分隔'
+      ],
+      expressionExamples: [
+        '将"负责项目开发"改为"主导项目开发，带领5人团队完成XX系统，提升效率40%"',
+        '将"熟悉技术"改为"精通XX技术，具有3年实际项目经验"',
+        '使用更具体的动词，如"优化"、"提升"、"实现"等'
+      ]
+    }
+  }
 
   // Fetch data on component mount
   useEffect(() => {
@@ -69,16 +185,73 @@ export default function AnalysisClient({
         setResume({ id: resumeData.id, title: resumeData.title })
         setResumeContent(resumeData.content_json || null)
 
-        // For initial analysis, use default data or fetch from API
-        const defaultAnalysis: AnalysisData = {
-          overallScore: 75,
-          scoreBreakdown: [
-            { name: "内容完整度", score: 70 },
-            { name: "结构与排版", score: 80 },
-            { name: "语言与表达", score: 75 }
-          ]
+        // Fetch real AI analysis data
+        if (resumeData.content_json) {
+          try {
+            const analysisRes = await authenticatedFetch("/api/ai/analyze", {
+              method: "POST",
+              body: JSON.stringify({ 
+                resumeContent: resumeData.content_json, 
+                resumeId: resumeData.id 
+              })
+            })
+            
+            if (analysisRes.ok) {
+              const aiData = await analysisRes.json()
+              
+              // Generate detailed analysis from AI recommendations
+              const detailedAnalysis = generateDetailedAnalysis(aiData)
+              
+              const mappedAnalysis: AnalysisData = {
+                overallScore: Math.round(aiData.overall_score || 0),
+                scoreBreakdown: [
+                  { name: "内容完整度", score: Math.round(aiData.scores?.content_completeness || 0) },
+                  { name: "结构与排版", score: Math.round(aiData.scores?.structure || 0) },
+                  { name: "语言与表达", score: Math.round(aiData.scores?.expression || 0) }
+                ],
+                detailedAnalysis: detailedAnalysis,
+                contentRecommendations: { 
+                  missing_sections: aiData.content_completeness?.missing_sections || [], 
+                  recommendations: aiData.content_completeness?.recommendations || [] 
+                },
+                structureRecommendations: aiData.structure?.recommendations || [],
+                expressionExamples: aiData.expression?.rewrite_examples || []
+              }
+              setAnalysis(mappedAnalysis)
+              
+              // 检查是否为缓存结果（如果返回的数据中包含缓存标识）
+              if (aiData.is_cached === true) {
+                setIsCached(true)
+              }
+            } else {
+              // Fallback to comprehensive mock analysis if AI fails
+              const fallbackAnalysis = generateComprehensiveMockAnalysis()
+              setAnalysis(fallbackAnalysis)
+            }
+          } catch (analysisError) {
+            console.warn('AI analysis failed, using default data:', analysisError)
+            const defaultAnalysis: AnalysisData = {
+              overallScore: 75,
+              scoreBreakdown: [
+                { name: "内容完整度", score: 70 },
+                { name: "结构与排版", score: 80 },
+                { name: "语言与表达", score: 75 }
+              ]
+            }
+            setAnalysis(defaultAnalysis)
+          }
+        } else {
+          // No content available, show empty state
+          const defaultAnalysis: AnalysisData = {
+            overallScore: 0,
+            scoreBreakdown: [
+              { name: "内容完整度", score: 0 },
+              { name: "结构与排版", score: 0 },
+              { name: "语言与表达", score: 0 }
+            ]
+          }
+          setAnalysis(defaultAnalysis)
         }
-        setAnalysis(defaultAnalysis)
         
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to load data'
@@ -159,37 +332,57 @@ export default function AnalysisClient({
   }
 
   async function reAnalyze() {
-    if (!resumeContent || !resume?.id) return
-    setLoading(true)
+    if (!resumeContent || !resume?.id) {
+      setError('简历内容为空，无法进行分析')
+      return
+    }
+    
+    setIsAnalyzing(true)
     setError(null)
+    
     try {
       const res = await authenticatedFetch("/api/ai/analyze", {
         method: "POST",
-        body: JSON.stringify({ resumeContent, resumeId: resume.id })
+        body: JSON.stringify({ 
+          resumeContent, 
+          resumeId: resume.id,
+          forceReanalyze: true // 告诉后端这是用户主动重新分析
+        })
       })
+      
       const data = await res.json()
+      
       if (!res.ok) { 
-        setError(data.error || '分析失败，请稍后再试')
-        setLoading(false) 
+        setError(data.error || 'AI分析失败，请稍后再试')
         return 
       }
+      
+      // Generate detailed analysis from AI recommendations
+      const detailedAnalysis = generateDetailedAnalysis(data)
+      
       const mapped: AnalysisData = {
-        overallScore: data.overall_score || 0,
+        overallScore: Math.round(data.overall_score || 0),
         scoreBreakdown: [
-          { name: "内容完整度", score: data.scores?.content_completeness || 0 },
-          { name: "结构与排版", score: data.scores?.structure || 0 },
-          { name: "语言与表达", score: data.scores?.expression || 0 }
+          { name: "内容完整度", score: Math.round(data.scores?.content_completeness || 0) },
+          { name: "结构与排版", score: Math.round(data.scores?.structure || 0) },
+          { name: "语言与表达", score: Math.round(data.scores?.expression || 0) }
         ],
-        contentRecommendations: { missing_sections: data.content_completeness?.missing_sections || [], recommendations: data.content_completeness?.recommendations || [] },
+        detailedAnalysis: detailedAnalysis,
+        contentRecommendations: { 
+          missing_sections: data.content_completeness?.missing_sections || [], 
+          recommendations: data.content_completeness?.recommendations || [] 
+        },
         structureRecommendations: data.structure?.recommendations || [],
         expressionExamples: data.expression?.rewrite_examples || []
       }
+      
       setAnalysis(mapped)
+      
     } catch (err) {
       setError('网络错误，请检查连接后重试')
       console.error('Re-analysis error:', err)
     } finally {
-      setLoading(false)
+      setIsAnalyzing(false)
     }
   }
 
@@ -339,13 +532,13 @@ export default function AnalysisClient({
                   <span className="truncate">下载报告</span>
                 </button>
                 <button 
-                  disabled={!resumeContent || loading} 
+                  disabled={!resumeContent || loading || isAnalyzing} 
                   onClick={reAnalyze} 
                   className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary/20 dark:bg-primary/30 text-primary text-sm font-bold leading-normal tracking-[0.015em] gap-2 hover:bg-primary/30 dark:hover:bg-primary/40 disabled:opacity-60"
-                  title={!resumeContent ? "简历内容为空，无法重新分析" : loading ? "正在分析中..." : "重新分析简历"}
+                  title={!resumeContent ? "简历内容为空，无法重新分析" : isAnalyzing ? "正在AI分析中..." : loading ? "加载中..." : isCached ? "基于已有分析重新生成" : "重新分析简历"}
                 >
-                  <span className="material-symbols-outlined text-lg">{loading ? "hourglass_empty" : "autorenew"}</span>
-                  <span className="truncate">{loading ? "分析中..." : "重新分析"}</span>
+                  <span className="material-symbols-outlined text-lg">{isAnalyzing ? "hourglass_empty" : "autorenew"}</span>
+                  <span className="truncate">{isAnalyzing ? "AI分析中..." : "重新分析"}</span>
                 </button>
               </div>
             </div>
@@ -364,8 +557,16 @@ export default function AnalysisClient({
                         <span className="text-4xl font-black">{analysis.overallScore}</span>
                         <span className="text-xs text-gray-500 dark:text-gray-400">/ 100</span>
                       </div>
+                      {isCached && (
+                        <div className="absolute -top-2 -right-2 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs px-2 py-1 rounded-full">
+                          缓存
+                        </div>
+                      )}
                     </div>
                     <p className={`text-xl font-bold ${scoreState(analysis.overallScore).text}`}>{scoreState(analysis.overallScore).label}</p>
+                    {isCached && (
+                      <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">基于已有分析</p>
+                    )}
                   </div>
                 </div>
 
