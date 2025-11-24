@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import puppeteer from 'puppeteer'
+import { getBrowser } from '@/src/lib/puppeteer'
 import { createSupabaseAdminClient } from '@/src/lib/supabaseAdmin'
 
 export async function GET(req: NextRequest) {
@@ -26,10 +26,7 @@ export async function GET(req: NextRequest) {
   const url = `${new URL(req.url).origin}/s/${resume.share_uuid}`
 
   try {
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
+    const browser = await getBrowser();
     const page = await browser.newPage()
 
     // Set viewport to A4 dimensions (approx) to ensure correct layout rendering

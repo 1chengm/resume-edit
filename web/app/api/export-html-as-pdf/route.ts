@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import puppeteer from 'puppeteer'
+import { getBrowser } from '@/src/lib/puppeteer'
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,10 +9,7 @@ export async function POST(req: NextRequest) {
       return new NextResponse('HTML content is required', { status: 400 })
     }
 
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
+    const browser = await getBrowser();
     const page = await browser.newPage()
 
     // Set the content of the page
