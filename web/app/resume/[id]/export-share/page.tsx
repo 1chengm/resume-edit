@@ -2,13 +2,15 @@
 import { useRef, useState, useEffect } from 'react'
 import { authenticatedFetch } from '@/src/lib/authenticatedFetch'
 import { getSupabaseClient } from '@/src/lib/supabaseClient'
+import { Copy, ExternalLink, X } from 'lucide-react'
 
 export default function ExportSharePage() {
   const ref = useRef<HTMLDivElement>(null)
   const [shareUrl, setShareUrl] = useState('')
-  const [permission, setPermission] = useState<'public'|'private'|'password'>('public')
+  const [permission, setPermission] = useState<'public' | 'private' | 'password'>('public')
   const [password, setPassword] = useState('')
   const [uploading, setUploading] = useState(false)
+  const [generatingPDF, setGeneratingPDF] = useState(false)
   const [resumeContent, setResumeContent] = useState<any>(null)
   const [resumeMetadata, setResumeMetadata] = useState<any>(null)
 
@@ -55,16 +57,32 @@ export default function ExportSharePage() {
       alert('无法生成 PDF：缺少简历 ID')
       return
     }
-    window.open(`/api/export-pdf/${id}`, '_blank');
-    
+
+    setGeneratingPDF(true)
     try {
-      // We still record the stat, even though generation is server-side
+      const res = await authenticatedFetch(`/api/export-pdf/${id}`)
+      if (!res.ok) throw new Error('PDF generation failed')
+
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${resumeMetadata?.title || 'resume'}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+
+      // Record stat
       await authenticatedFetch('/api/stats', {
         method: 'POST',
         body: JSON.stringify({ type: 'pdf_download', resume_id: id })
       })
     } catch (error) {
-      console.error('Failed to record PDF download stat:', error)
+      console.error('Failed to generate PDF:', error)
+      alert('生成 PDF 失败，请重试')
+    } finally {
+      setGeneratingPDF(false)
     }
   }
 
@@ -143,12 +161,27 @@ export default function ExportSharePage() {
   }
 
   return (
-    <div className="grid grid-cols-3">
+    <div className="grid grid-cols-3 relative">
+      {/* Loading Overlay */}
+      {generatingPDF && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center text-white">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-primary mb-4"></div>
+          <h2 className="text-2xl font-bold mb-2">正在生成 PDF...</h2>
+          <p className="text-gray-300">请稍候，我们正在为您渲染高清简历</p>
+        </div>
+      )}
+
       <div className="col-span-2 p-8 space-y-4">
         <h1 className="text-2xl font-bold">导出为 PDF</h1>
         <p className="text-gray-500">生成打印友好的 PDF 文件</p>
         <div className="flex gap-3">
-          <button className="h-10 px-4 rounded-lg bg-primary text-white font-bold" onClick={generatePDF}>生成 PDF</button>
+          <button
+            className="h-10 px-4 rounded-lg bg-primary text-white font-bold hover:bg-primary/90 transition-colors flex items-center gap-2"
+            onClick={generatePDF}
+            disabled={generatingPDF}
+          >
+            {generatingPDF ? '生成中...' : '生成 PDF'}
+          </button>
           <button className="h-10 px-4 rounded-lg bg-gray-800 text-white font-bold disabled:opacity-60" onClick={uploadPDF} disabled={uploading}>{uploading ? '上传中...' : '上传到云端'}</button>
         </div>
         <div ref={ref} className="mt-6">
@@ -268,25 +301,60 @@ export default function ExportSharePage() {
       <div className="border-l p-8 space-y-4">
         <h1 className="text-2xl font-bold">分享链接</h1>
         <div className="space-y-2">
-          <label className="flex items-center gap-2">
-            <input type="radio" checked={permission==='public'} onChange={() => setPermission('public')} /> 公开
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input type="radio" checked={permission === 'public'} onChange={() => setPermission('public')} className="accent-primary" />
+            <span>公开</span>
           </label>
-          <label className="flex items-center gap-2">
-            <input type="radio" checked={permission==='private'} onChange={() => setPermission('private')} /> 私密
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input type="radio" checked={permission === 'private'} onChange={() => setPermission('private')} className="accent-primary" />
+            <span>私密</span>
           </label>
-          <label className="flex items-center gap-2">
-            <input type="radio" checked={permission==='password'} onChange={() => setPermission('password')} /> 密码
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input type="radio" checked={permission === 'password'} onChange={() => setPermission('password')} className="accent-primary" />
+            <span>密码保护</span>
           </label>
-          {permission==='password' && (
-            <input className="w-full h-10 border rounded-lg px-3" placeholder="设置分享密码" value={password} onChange={e => setPassword(e.target.value)} />
+          {permission === 'password' && (
+            <input className="w-full h-10 border rounded-lg px-3 focus:ring-2 focus:ring-primary/20 outline-none transition-all" placeholder="设置分享密码" value={password} onChange={e => setPassword(e.target.value)} />
           )}
         </div>
-        <button className="h-10 px-4 rounded-lg bg-primary text-white font-bold" onClick={createShare}>生成分享链接</button>
-        {shareUrl && (
-          <div className="mt-2">
-            <input className="w-full h-10 border rounded-lg px-3" readOnly value={shareUrl} />
-            <div className="mt-2 flex gap-2">
-              <button className="h-10 px-4 rounded-lg bg-gray-100 font-bold" onClick={() => navigator.clipboard.writeText(shareUrl)}>复制链接</button>
+
+        {!shareUrl ? (
+          <button className="w-full h-10 px-4 rounded-lg bg-primary text-white font-bold hover:bg-primary/90 transition-colors" onClick={createShare}>生成分享链接</button>
+        ) : (
+          <div className="mt-4 p-4 bg-muted/30 rounded-xl border space-y-3 animate-in fade-in slide-in-from-top-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-green-600 flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                链接已生成
+              </span>
+              <button onClick={() => setShareUrl('')} className="text-xs text-muted-foreground hover:text-destructive transition-colors">关闭</button>
+            </div>
+            <input className="w-full h-10 border rounded-lg px-3 bg-white text-sm" readOnly value={shareUrl} onClick={e => e.currentTarget.select()} />
+            <div className="flex gap-2">
+              <button
+                className="flex-1 h-9 rounded-lg bg-primary text-white font-medium text-sm hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
+                onClick={() => {
+                  navigator.clipboard.writeText(shareUrl)
+                  alert('链接已复制到剪贴板')
+                }}
+              >
+                <Copy className="h-4 w-4" />
+                复制
+              </button>
+              <button
+                className="flex-1 h-9 rounded-lg border bg-white font-medium text-sm hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                onClick={() => window.open(shareUrl, '_blank')}
+              >
+                <ExternalLink className="h-4 w-4" />
+                打开
+              </button>
+              <button
+                className="h-9 px-3 rounded-lg border bg-white font-medium text-sm hover:bg-gray-50 transition-colors text-muted-foreground"
+                onClick={() => setShareUrl('')}
+                title="关闭"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
           </div>
         )}

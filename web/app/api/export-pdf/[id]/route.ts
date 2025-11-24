@@ -28,11 +28,23 @@ export async function GET(req: NextRequest) {
   try {
     const browser = await puppeteer.launch({
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'] 
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
     const page = await browser.newPage()
-    
+
+    // Set viewport to A4 dimensions (approx) to ensure correct layout rendering
+    await page.setViewport({ width: 794, height: 1123 })
+
     await page.goto(url, { waitUntil: 'networkidle0' })
+
+    // Inject CSS to ensure single page and remove extra margins
+    await page.addStyleTag({
+      content: `
+        @page { size: auto; margin: 0mm; }
+        html, body { height: 100%; overflow: hidden; margin: 0; padding: 0; }
+        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      `
+    })
 
     // Give the page a moment to render any final client-side JS
     await new Promise(r => setTimeout(r, 1000));
@@ -41,19 +53,21 @@ export async function GET(req: NextRequest) {
       format: 'A4',
       printBackground: true,
       margin: {
-        top: '20px',
-        right: '20px',
-        bottom: '20px',
-        left: '20px'
-      }
+        top: '0px',
+        right: '0px',
+        bottom: '0px',
+        left: '0px'
+      },
+      preferCSSPageSize: true,
+      scale: 0.9 // Scale down slightly to ensure content fits without clipping
     })
 
     await browser.close()
 
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(pdfBuffer as any, {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="resume.pdf"`,
+        'Content-Disposition': 'attachment; filename="resume.pdf"',
       },
     })
   } catch (error) {

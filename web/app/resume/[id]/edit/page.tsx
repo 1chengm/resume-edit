@@ -2,6 +2,36 @@
 import { useState, useRef, useEffect } from 'react'
 import { renderMarkdown } from '@/lib/markdown'
 import { authenticatedFetch } from '@/src/lib/authenticatedFetch'
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Card } from "@/components/ui/card"
+import {
+  ArrowLeft,
+  Download,
+  Share2,
+  Save,
+  ChevronDown,
+  Plus,
+  Trash2,
+  Bold,
+  Italic,
+  List,
+  ZoomIn,
+  ZoomOut,
+  User,
+  FileText,
+  GraduationCap,
+  Briefcase,
+  FolderGit2,
+  Wrench,
+  Award,
+  Copy,
+  ExternalLink,
+  X
+} from "lucide-react"
+import Link from "next/link"
+import { cn } from "@/lib/utils"
 
 export default function ResumeEditPage() {
   const [form, setForm] = useState({
@@ -23,7 +53,7 @@ export default function ResumeEditPage() {
   const [scale, setScale] = useState(1)
   const lastSaveRef = useRef<number>(0)
   const [shareUrl, setShareUrl] = useState('')
-  const [savedText, setSavedText] = useState('未保存')
+  const [savedText, setSavedText] = useState('Unsaved')
   const previewRef = useRef<HTMLDivElement>(null)
   const summaryRef = useRef<HTMLTextAreaElement>(null)
   const [dirty, setDirty] = useState(false)
@@ -36,43 +66,45 @@ export default function ResumeEditPage() {
   useEffect(() => {
     const id = typeof window !== 'undefined' ? location.pathname.split('/')[2] : ''
     if (!id) return
-    ;(async () => {
-      const res = await authenticatedFetch(`/api/resumes/${id}`)
-      const j = await res.json()
-      if (res.ok && j?.content_json) {
-        const p = j.content_json.personal || {}
-        setForm({
-          fullName: p.full_name || '',
-          title: p.title || '',
-          phone: p.phone || '',
-          email: p.email || '',
-          linkedin: p.linkedin || '',
-          portfolio: p.portfolio || '',
-          summary: j.content_json.summary || ''
-        })
-        setEducation((j.content_json.education || []).map((e: { school?: string; degree?: string; year?: string }) => ({ school: e.school || '', degree: e.degree || '', year: e.year || '' })))
-        setExperience((j.content_json.experience || []).map((e: { company?: string; role?: string; from?: string; to?: string; highlights?: string[] }) => ({ company: e.company || '', role: e.role || '', from: e.from || '', to: e.to || '', highlights: (e.highlights || []).join('\n') })))
-        setProjects((j.content_json.projects || []).map((e: { name?: string; description?: string; highlights?: string[] }) => ({ name: e.name || '', description: e.description || '', highlights: (e.highlights || []).join('\n') })))
-        setSkills(j.content_json.skills || [])
-        setCerts(j.content_json.certificates || [])
-        setDirty(false)
-      }
-    })()
+      ; (async () => {
+        const res = await authenticatedFetch(`/api/resumes/${id}`)
+        const j = await res.json()
+        if (res.ok && j?.content_json) {
+          const p = j.content_json.personal || {}
+          setForm({
+            fullName: p.full_name || '',
+            title: p.title || '',
+            phone: p.phone || '',
+            email: p.email || '',
+            linkedin: p.linkedin || '',
+            portfolio: p.portfolio || '',
+            summary: j.content_json.summary || ''
+          })
+          setEducation((j.content_json.education || []).map((e: { school?: string; degree?: string; year?: string }) => ({ school: e.school || '', degree: e.degree || '', year: e.year || '' })))
+          setExperience((j.content_json.experience || []).map((e: { company?: string; role?: string; from?: string; to?: string; highlights?: string[] }) => ({ company: e.company || '', role: e.role || '', from: e.from || '', to: e.to || '', highlights: (e.highlights || []).join('\n') })))
+          setProjects((j.content_json.projects || []).map((e: { name?: string; description?: string; highlights?: string[] }) => ({ name: e.name || '', description: e.description || '', highlights: (e.highlights || []).join('\n') })))
+          setSkills(j.content_json.skills || [])
+          setCerts(j.content_json.certificates || [])
+          setDirty(false)
+          setSavedText('Saved')
+        }
+      })()
   }, [])
 
   useEffect(() => { void lastSaveRef.current }, [])
 
   async function save(): Promise<boolean> {
     const id = typeof window !== 'undefined' ? location.pathname.split('/')[2] : ''
-    const payload = { content_json: { personal: { full_name: form.fullName, title: form.title, phone: form.phone, email: form.email, linkedin: form.linkedin, portfolio: form.portfolio }, summary: form.summary, education, experience: experience.map(e => ({ ...e, highlights: e.highlights.split('\n').filter(Boolean) })), projects: projects.map(p => ({ ...p, highlights: p.highlights.split('\n').filter(Boolean) })), skills, certificates: certs }, title: form.fullName ? `${form.fullName} 的简历` : undefined, template, color_theme: color }
+    const payload = { content_json: { personal: { full_name: form.fullName, title: form.title, phone: form.phone, email: form.email, linkedin: form.linkedin, portfolio: form.portfolio }, summary: form.summary, education, experience: experience.map(e => ({ ...e, highlights: e.highlights.split('\n').filter(Boolean) })), projects: projects.map(p => ({ ...p, highlights: p.highlights.split('\n').filter(Boolean) })), skills, certificates: certs }, title: form.fullName ? `${form.fullName} Resume` : undefined, template, color_theme: color }
     const res = await authenticatedFetch(`/api/resumes/${id}`, { method: 'PATCH', body: JSON.stringify(payload) })
-    if (res.ok) { setSavedText('已保存'); setDirty(false); try { localStorage.removeItem(`resume_draft_${id}`) } catch {}; return true } else { setSavedText('保存失败'); try { localStorage.setItem(`resume_draft_${id}`, JSON.stringify(payload)) } catch {}; return false }
+    if (res.ok) { setSavedText('Saved'); setDirty(false); try { localStorage.removeItem(`resume_draft_${id}`) } catch { }; return true } else { setSavedText('Save Failed'); try { localStorage.setItem(`resume_draft_${id}`, JSON.stringify(payload)) } catch { }; return false }
   }
 
   async function saveWithRetry() {
     const now = Date.now()
     if (now - lastSaveRef.current < 300) return
     lastSaveRef.current = now
+    setSavedText('Saving...')
     let attempt = 0
     while (attempt < 3) {
       const before = Date.now()
@@ -88,13 +120,12 @@ export default function ResumeEditPage() {
   async function generatePDF() {
     const id = typeof window !== 'undefined' ? location.pathname.split('/')[2] : ''
     if (!id) {
-      alert('无法生成 PDF：缺少简历 ID')
+      alert('Missing Resume ID')
       return
     }
     window.open(`/api/export-pdf/${id}`, '_blank');
-    
+
     try {
-      // We still record the stat, even though generation is server-side
       await authenticatedFetch('/api/stats', {
         method: 'POST',
         body: JSON.stringify({ type: 'pdf_download', resume_id: id })
@@ -112,243 +143,500 @@ export default function ResumeEditPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen">
-      <header className="flex items-center justify-between whitespace-nowrap border-b border-[#E9ECEF] px-6 py-3 bg-white shadow-sm">
+    <div className="flex flex-col h-screen bg-muted/10">
+      {/* Header */}
+      <header className="h-16 border-b bg-background flex items-center justify-between px-4 lg:px-6 sticky top-0 z-20 shadow-sm">
         <div className="flex items-center gap-4">
-          <a href="/dashboard" className="flex items-center justify-center size-8 rounded-full hover:bg-gray-100">
-            <span className="material-symbols-outlined text-gray-600">arrow_back</span>
-          </a>
-          <h2 className="text-lg font-bold">简历编辑器</h2>
-          <span className="text-xs font-medium text-[#6C757D] ml-2">{savedText}</span>
-        </div>
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">模板:</span>
-              <select className="h-10 rounded-lg border-[#E9ECEF] bg-[#f6f7f8] px-2" value={template} onChange={e => setTemplate(e.target.value)}>
-                <option>Modern</option>
-                <option>Classic</option>
-                <option>Creative</option>
-              </select>
-            </div>
-          <div className="flex gap-2">
-            <button className="flex items-center justify-center gap-2 rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold" onClick={generatePDF}>
-              <span className="material-symbols-outlined text-base">download</span>
-              <span>导出 PDF</span>
-            </button>
-            <button className="flex items-center justify-center gap-2 rounded-lg h-10 px-4 bg-[#E9ECEF] text-[#212529] text-sm font-bold" onClick={createShare}>
-              <span className="material-symbols-outlined text-base">share</span>
-              <span>分享链接</span>
-            </button>
+          <Link href="/dashboard">
+            <Button variant="ghost" size="icon" className="rounded-full">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          </Link>
+          <div className="flex flex-col">
+            <h2 className="text-lg font-bold leading-tight">Resume Editor</h2>
+            <span className={cn("text-xs font-medium", dirty ? "text-yellow-600" : "text-muted-foreground")}>
+              {dirty ? "Unsaved changes" : savedText}
+            </span>
           </div>
-          {shareUrl && (
-            <input className="h-10 w-64 border rounded-lg px-3" readOnly value={shareUrl} />
-          )}
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-2 bg-muted/50 p-1 rounded-lg">
+            <Button
+              variant={template === 'Modern' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setTemplate('Modern')}
+              className="h-8 text-xs"
+            >
+              Modern
+            </Button>
+            <Button
+              variant={template === 'Classic' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setTemplate('Classic')}
+              className="h-8 text-xs"
+            >
+              Classic
+            </Button>
+            <Button
+              variant={template === 'Creative' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setTemplate('Creative')}
+              className="h-8 text-xs"
+            >
+              Creative
+            </Button>
+          </div>
+
+          <div className="h-6 w-px bg-border mx-2 hidden md:block"></div>
+
+          <Button variant="outline" size="sm" onClick={saveWithRetry} className="gap-2">
+            <Save className="h-4 w-4" />
+            <span className="hidden sm:inline">Save</span>
+          </Button>
+          <Button variant="outline" size="sm" onClick={createShare} className="gap-2">
+            <Share2 className="h-4 w-4" />
+            <span className="hidden sm:inline">Share</span>
+          </Button>
+          <Button size="sm" onClick={generatePDF} className="gap-2">
+            <Download className="h-4 w-4" />
+            <span className="hidden sm:inline">Export PDF</span>
+          </Button>
         </div>
       </header>
-      <main className="flex-grow grid grid-cols-12 overflow-hidden">
-      <section className="col-span-5 bg-white p-6 overflow-y-auto border-r border-[#E9ECEF]">
-        <details className="flex flex-col rounded-lg border border-[#E9ECEF] bg-[#f6f7f8] px-4 group" open>
-          <summary className="flex cursor-pointer items-center justify-between gap-6 py-3">
-            <p className="text-sm font-medium">个人信息</p>
-            <span className="material-symbols-outlined transition-transform group-open:rotate-180">expand_more</span>
-          </summary>
-          <div className="pb-4 pt-2 space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <input className="h-11 border rounded-lg px-3" placeholder="姓名" value={form.fullName} onChange={e => update('fullName', e.target.value)} />
-              <input className="h-11 border rounded-lg px-3" placeholder="职称" value={form.title} onChange={e => update('title', e.target.value)} />
-              <input className="h-11 border rounded-lg px-3" placeholder="电话" value={form.phone} onChange={e => update('phone', e.target.value)} />
-              <input className="h-11 border rounded-lg px-3" placeholder="邮箱" value={form.email} onChange={e => update('email', e.target.value)} />
-              <input className="h-11 border rounded-lg px-3" placeholder="LinkedIn" value={form.linkedin} onChange={e => update('linkedin', e.target.value)} />
-              <input className="h-11 border rounded-lg px-3" placeholder="作品集" value={form.portfolio} onChange={e => update('portfolio', e.target.value)} />
+
+      {/* Main Content */}
+      <main className="flex-grow flex overflow-hidden">
+        {/* Editor Panel */}
+        <section className="w-full lg:w-1/2 xl:w-2/5 bg-background border-r overflow-y-auto p-6 space-y-6">
+
+          {/* Personal Info */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-lg font-semibold text-primary">
+              <User className="h-5 w-5" />
+              <h3>Personal Information</h3>
             </div>
-          </div>
-        </details>
-        <details className="flex flex-col rounded-lg border border-[#E9ECEF] bg-[#f6f7f8] px-4 group">
-          <summary className="flex cursor-pointer items-center justify-between gap-6 py-3">
-            <p className="text-sm font-medium">个人简介</p>
-            <span className="material-symbols-outlined transition-transform group-open:rotate-180">expand_more</span>
-          </summary>
-          <div className="pb-4 pt-2 space-y-2">
-            <div className="rounded-lg border border-[#E9ECEF] bg-white">
-              <div className="flex items-center p-2 border-b border-[#E9ECEF] gap-1">
-                <button className="p-1.5 rounded hover:bg-[#E9ECEF]" onClick={() => { const el = summaryRef.current; if (!el) return; const { selectionStart, selectionEnd, value } = el; const selected = value.slice(selectionStart, selectionEnd); const next = value.slice(0, selectionStart) + `**${selected}**` + value.slice(selectionEnd); el.value = next; update('summary', next); el.focus(); const pos = selectionStart + 2 + selected.length + 2; el.selectionStart = el.selectionEnd = pos }}><span className="material-symbols-outlined text-lg">format_bold</span></button>
-                <button className="p-1.5 rounded hover:bg-[#E9ECEF]" onClick={() => { const el = summaryRef.current; if (!el) return; const { selectionStart, selectionEnd, value } = el; const selected = value.slice(selectionStart, selectionEnd); const next = value.slice(0, selectionStart) + `*${selected}*` + value.slice(selectionEnd); el.value = next; update('summary', next); el.focus(); const pos = selectionStart + 1 + selected.length + 1; el.selectionStart = el.selectionEnd = pos }}><span className="material-symbols-outlined text-lg">format_italic</span></button>
-                <button className="p-1.5 rounded hover:bg-[#E9ECEF]" onClick={() => { const el = summaryRef.current; if (!el) return; const { selectionStart, value } = el; const lineStart = value.lastIndexOf('\n', selectionStart - 1) + 1; const next = value.slice(0, lineStart) + '- ' + value.slice(lineStart); el.value = next; update('summary', next); el.focus(); const pos = selectionStart + 2; el.selectionStart = el.selectionEnd = pos }}><span className="material-symbols-outlined text-lg">format_list_bulleted</span></button>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground">Full Name</label>
+                <Input value={form.fullName} onChange={e => update('fullName', e.target.value)} placeholder="John Doe" />
               </div>
-              <textarea ref={summaryRef} className="w-full text-sm bg-transparent h-32 resize-none p-3" placeholder="撰写个人简介（支持 Markdown）" value={form.summary} onChange={e => update('summary', e.target.value)} />
-            </div>
-          </div>
-        </details>
-        <details className="flex flex-col rounded-lg border border-[#E9ECEF] bg-[#f6f7f8] px-4 group">
-          <summary className="flex cursor-pointer items-center justify-between gap-6 py-3">
-            <p className="text-sm font-medium">教育经历</p>
-            <span className="material-symbols-outlined transition-transform group-open:rotate-180">expand_more</span>
-          </summary>
-          <div className="pb-4 pt-2 space-y-3">
-            {education.map((e, idx) => (
-              <div key={idx} className="grid grid-cols-3 gap-2">
-                <input className="h-10 border rounded-lg px-3" placeholder="学校" value={e.school} onChange={ev => setEducation(prev => prev.map((x,i)=> i===idx?{...x, school: ev.target.value}:x))} />
-                <input className="h-10 border rounded-lg px-3" placeholder="学位" value={e.degree} onChange={ev => setEducation(prev => prev.map((x,i)=> i===idx?{...x, degree: ev.target.value}:x))} />
-                <input className="h-10 border rounded-lg px-3" placeholder="年份" value={e.year} onChange={ev => setEducation(prev => prev.map((x,i)=> i===idx?{...x, year: ev.target.value}:x))} />
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground">Job Title</label>
+                <Input value={form.title} onChange={e => update('title', e.target.value)} placeholder="Software Engineer" />
               </div>
-            ))}
-            <div className="flex gap-2">
-              <button className="h-9 px-3 rounded-lg bg-gray-100" onClick={() => setEducation(prev => [...prev, { school: '', degree: '', year: '' }])}>添加</button>
-              {education.length>0 && <button className="h-9 px-3 rounded-lg bg-gray-100" onClick={() => setEducation(prev => prev.slice(0,-1))}>删除最后一项</button>}
-            </div>
-          </div>
-        </details>
-        <details className="flex flex-col rounded-lg border border-[#E9ECEF] bg-[#f6f7f8] px-4 group">
-          <summary className="flex cursor-pointer items-center justify-between gap-6 py-3">
-            <p className="text-sm font-medium">工作经历</p>
-            <span className="material-symbols-outlined transition-transform group-open:rotate-180">expand_more</span>
-          </summary>
-          <div className="pb-4 pt-2 space-y-3">
-            {experience.map((e, idx) => (
-              <div key={idx} className="grid grid-cols-2 gap-2">
-                <input className="h-10 border rounded-lg px-3" placeholder="公司" value={e.company} onChange={ev => setExperience(prev => prev.map((x,i)=> i===idx?{...x, company: ev.target.value}:x))} />
-                <input className="h-10 border rounded-lg px-3" placeholder="职位" value={e.role} onChange={ev => setExperience(prev => prev.map((x,i)=> i===idx?{...x, role: ev.target.value}:x))} />
-                <input className="h-10 border rounded-lg px-3" placeholder="开始" value={e.from} onChange={ev => setExperience(prev => prev.map((x,i)=> i===idx?{...x, from: ev.target.value}:x))} />
-                <input className="h-10 border rounded-lg px-3" placeholder="结束" value={e.to} onChange={ev => setExperience(prev => prev.map((x,i)=> i===idx?{...x, to: ev.target.value}:x))} />
-                <textarea className="col-span-2 h-24 border rounded-lg px-3" placeholder="亮点（每行一条）" value={e.highlights} onChange={ev => setExperience(prev => prev.map((x,i)=> i===idx?{...x, highlights: ev.target.value}:x))} />
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground">Phone</label>
+                <Input value={form.phone} onChange={e => update('phone', e.target.value)} placeholder="+1 234 567 890" />
               </div>
-            ))}
-            <div className="flex gap-2">
-              <button className="h-9 px-3 rounded-lg bg-gray-100" onClick={() => setExperience(prev => [...prev, { company: '', role: '', from: '', to: '', highlights: '' }])}>添加</button>
-              {experience.length>0 && <button className="h-9 px-3 rounded-lg bg-gray-100" onClick={() => setExperience(prev => prev.slice(0,-1))}>删除最后一项</button>}
-            </div>
-          </div>
-        </details>
-        <details className="flex flex-col rounded-lg border border-[#E9ECEF] bg-[#f6f7f8] px-4 group">
-          <summary className="flex cursor-pointer items-center justify-between gap-6 py-3">
-            <p className="text-sm font-medium">项目经验</p>
-            <span className="material-symbols-outlined transition-transform group-open:rotate-180">expand_more</span>
-          </summary>
-          <div className="pb-4 pt-2 space-y-3">
-            {projects.map((p, idx) => (
-              <div key={idx} className="grid grid-cols-2 gap-2">
-                <input className="h-10 border rounded-lg px-3" placeholder="项目名称" value={p.name} onChange={ev => setProjects(prev => prev.map((x,i)=> i===idx?{...x, name: ev.target.value}:x))} />
-                <input className="h-10 border rounded-lg px-3" placeholder="项目描述" value={p.description} onChange={ev => setProjects(prev => prev.map((x,i)=> i===idx?{...x, description: ev.target.value}:x))} />
-                <textarea className="col-span-2 h-24 border rounded-lg px-3" placeholder="亮点（每行一条）" value={p.highlights} onChange={ev => setProjects(prev => prev.map((x,i)=> i===idx?{...x, highlights: ev.target.value}:x))} />
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground">Email</label>
+                <Input value={form.email} onChange={e => update('email', e.target.value)} placeholder="john@example.com" />
               </div>
-            ))}
-            <div className="flex gap-2">
-              <button className="h-9 px-3 rounded-lg bg-gray-100" onClick={() => setProjects(prev => [...prev, { name: '', description: '', highlights: '' }])}>添加</button>
-              {projects.length>0 && <button className="h-9 px-3 rounded-lg bg-gray-100" onClick={() => setProjects(prev => prev.slice(0,-1))}>删除最后一项</button>}
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground">LinkedIn</label>
+                <Input value={form.linkedin} onChange={e => update('linkedin', e.target.value)} placeholder="linkedin.com/in/johndoe" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground">Portfolio</label>
+                <Input value={form.portfolio} onChange={e => update('portfolio', e.target.value)} placeholder="johndoe.com" />
+              </div>
             </div>
           </div>
-        </details>
-        <details className="flex flex-col rounded-lg border border-[#E9ECEF] bg-[#f6f7f8] px-4 group">
-          <summary className="flex cursor-pointer items-center justify-between gap-6 py-3">
-            <p className="text-sm font-medium">技能</p>
-            <span className="material-symbols-outlined transition-transform group-open:rotate-180">expand_more</span>
-          </summary>
-          <div className="pb-4 pt-2">
-            <div className="flex gap-2">
-              <input className="h-10 border rounded-lg px-3 flex-1" placeholder="添加技能" onKeyDown={e => { if (e.key==='Enter') { e.preventDefault(); const v = (e.target as HTMLInputElement).value.trim(); if (v) { setSkills(prev => [...prev, v]); (e.target as HTMLInputElement).value=''; } } }} />
-              {skills.length>0 && <button className="h-9 px-3 rounded-lg bg-gray-100" onClick={() => setSkills(prev => prev.slice(0,-1))}>删除最后一项</button>}
+
+          <div className="h-px bg-border"></div>
+
+          {/* Summary */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-lg font-semibold text-primary">
+                <FileText className="h-5 w-5" />
+                <h3>Professional Summary</h3>
+              </div>
+              <div className="flex gap-1 bg-muted/50 p-1 rounded-md">
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { const el = summaryRef.current; if (!el) return; const { selectionStart, selectionEnd, value } = el; const selected = value.slice(selectionStart, selectionEnd); const next = value.slice(0, selectionStart) + `**${selected}**` + value.slice(selectionEnd); el.value = next; update('summary', next); el.focus(); const pos = selectionStart + 2 + selected.length + 2; el.selectionStart = el.selectionEnd = pos }}>
+                  <Bold className="h-3 w-3" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { const el = summaryRef.current; if (!el) return; const { selectionStart, selectionEnd, value } = el; const selected = value.slice(selectionStart, selectionEnd); const next = value.slice(0, selectionStart) + `*${selected}*` + value.slice(selectionEnd); el.value = next; update('summary', next); el.focus(); const pos = selectionStart + 1 + selected.length + 1; el.selectionStart = el.selectionEnd = pos }}>
+                  <Italic className="h-3 w-3" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { const el = summaryRef.current; if (!el) return; const { selectionStart, value } = el; const lineStart = value.lastIndexOf('\n', selectionStart - 1) + 1; const next = value.slice(0, lineStart) + '- ' + value.slice(lineStart); el.value = next; update('summary', next); el.focus(); const pos = selectionStart + 2; el.selectionStart = el.selectionEnd = pos }}>
+                  <List className="h-3 w-3" />
+                </Button>
+              </div>
             </div>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {skills.map((s, i) => (<span key={i} className="bg-gray-100 text-gray-700 text-xs font-semibold px-3 py-1 rounded-full">{s}</span>))}
-            </div>
+            <Textarea
+              ref={summaryRef}
+              value={form.summary}
+              onChange={e => update('summary', e.target.value)}
+              placeholder="Write a brief summary of your professional background..."
+              className="min-h-[120px]"
+            />
           </div>
-        </details>
-        <details className="flex flex-col rounded-lg border border-[#E9ECEF] bg-[#f6f7f8] px-4 group">
-          <summary className="flex cursor-pointer items-center justify-between gap-6 py-3">
-            <p className="text-sm font-medium">证书</p>
-            <span className="material-symbols-outlined transition-transform group-open:rotate-180">expand_more</span>
-          </summary>
-          <div className="pb-4 pt-2">
-            <div className="flex gap-2">
-              <input className="h-10 border rounded-lg px-3 flex-1" placeholder="添加证书" onKeyDown={e => { if (e.key==='Enter') { e.preventDefault(); const v = (e.target as HTMLInputElement).value.trim(); if (v) { setCerts(prev => [...prev, v]); (e.target as HTMLInputElement).value=''; } } }} />
-              {certs.length>0 && <button className="h-9 px-3 rounded-lg bg-gray-100" onClick={() => setCerts(prev => prev.slice(0,-1))}>删除最后一项</button>}
+
+          <div className="h-px bg-border"></div>
+
+          {/* Education */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-lg font-semibold text-primary">
+                <GraduationCap className="h-5 w-5" />
+                <h3>Education</h3>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setEducation(prev => [...prev, { school: '', degree: '', year: '' }])}>
+                <Plus className="h-4 w-4 mr-1" /> Add
+              </Button>
             </div>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {certs.map((s, i) => (<span key={i} className="text-xs font-semibold px-3 py-1 rounded-full" style={{ background: '#eeeeee', color: '#4a4a4a' }}>{s}</span>))}
-            </div>
-          </div>
-        </details>
-      </section>
-      <section className="col-span-7 bg-[#f6f7f8] p-6 overflow-y-auto flex flex-col items-center">
-        <div className="flex items-center justify-center gap-2 mb-4 sticky top-0 bg-[#f6f7f8] py-2 z-10">
-          <button className="p-2 rounded-lg bg-white shadow-sm" onClick={() => setScale(prev => Math.max(0.5, +(prev - 0.1).toFixed(2)))}><span className="material-symbols-outlined">zoom_out</span></button>
-          <span className="text-sm font-medium w-16 text-center">{Math.round(scale*100)}%</span>
-          <button className="p-2 rounded-lg bg-white shadow-sm" onClick={() => setScale(prev => Math.min(2, +(prev + 0.1).toFixed(2)))}><span className="material-symbols-outlined">zoom_in</span></button>
-        </div>
-        <div ref={previewRef} className="bg-white rounded-lg shadow w-full max-w-[210mm] min-h-[297mm] p-10 text-[#0d0d0d]" style={{ transform: `scale(${scale})`, transformOrigin: 'top center' }}>
-          <header className="text-center border-b-2 pb-4 mb-6" style={{ borderColor: '#0d0d0d' }}>
-            <h1 className="text-4xl font-bold">{form.fullName || '姓名'}</h1>
-            <p className="text-lg mt-1">{form.title || '职称'}</p>
-            <div className="flex items-center justify-center gap-4 text-sm mt-2" style={{ color: '#666666' }}>
-              {form.phone && <span>{form.phone}</span>}
-              {form.email && <span>|</span>}
-              {form.email && <span>{form.email}</span>}
-              {(form.linkedin || form.portfolio) && <span>|</span>}
-              {form.linkedin && <span>{form.linkedin}</span>}
-              {form.portfolio && <span>{form.portfolio}</span>}
-            </div>
-          </header>
-          <section>
-            <h2 className="text-lg font-bold border-b pb-2 mb-3">职业概述</h2>
-            <div className="text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: renderMarkdown(form.summary || '在此填写个人简介。') }} />
-          </section>
-          <section className="mt-6">
-            <h2 className="text-lg font-bold border-b pb-2 mb-3">教育经历</h2>
-            <div className="space-y-3">
-              {education.map((e, i) => (
-                <div key={i}>
-                  <div className="flex justify-between"><span className="font-bold">{e.degree}</span><span className="text-sm" style={{ color: '#666666' }}>{e.year}</span></div>
-                  <p className="text-sm italic">{e.school}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-          <section className="mt-6">
-            <h2 className="text-lg font-bold border-b pb-2 mb-3">工作经历</h2>
             <div className="space-y-4">
-              {experience.map((e, i) => (
-                <div key={i}>
-                  <div className="flex justify-between"><span className="font-bold">{e.role}</span><span className="text-sm" style={{ color: '#666666' }}>{e.from} - {e.to}</span></div>
-                  <p className="text-sm italic">{e.company}</p>
-                  <ul className="list-disc pl-5 mt-2 text-sm space-y-1">
-                    {e.highlights.split('\n').filter(Boolean).map((h, idx) => (<li key={idx}>{h}</li>))}
-                  </ul>
-                </div>
+              {education.map((e, idx) => (
+                <Card key={idx} className="p-4 relative group">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 text-destructive hover:text-destructive hover:bg-destructive/10 transition-opacity"
+                    onClick={() => setEducation(prev => prev.filter((_, i) => i !== idx))}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pr-8">
+                    <Input placeholder="School / University" value={e.school} onChange={ev => setEducation(prev => prev.map((x, i) => i === idx ? { ...x, school: ev.target.value } : x))} />
+                    <Input placeholder="Degree / Major" value={e.degree} onChange={ev => setEducation(prev => prev.map((x, i) => i === idx ? { ...x, degree: ev.target.value } : x))} />
+                    <Input placeholder="Year / Period" value={e.year} onChange={ev => setEducation(prev => prev.map((x, i) => i === idx ? { ...x, year: ev.target.value } : x))} />
+                  </div>
+                </Card>
               ))}
-            </div>
-          </section>
-          <section className="mt-6">
-            <h2 className="text-lg font-bold border-b pb-2 mb-3">项目经验</h2>
-            <div className="space-y-4">
-              {projects.map((p, i) => (
-                <div key={i}>
-                  <div className="flex justify-between"><span className="font-bold">{p.name}</span></div>
-                  <p className="text-sm italic">{p.description}</p>
-                  <ul className="list-disc pl-5 mt-2 text-sm space-y-1">
-                    {p.highlights.split('\n').filter(Boolean).map((h, idx) => (<li key={idx}>{h}</li>))}
-                  </ul>
+              {education.length === 0 && (
+                <div className="text-center p-4 border border-dashed rounded-lg text-muted-foreground text-sm">
+                  No education added yet.
                 </div>
-              ))}
+              )}
             </div>
-          </section>
-          <section className="mt-6">
-            <h2 className="text-lg font-bold border-b pb-2 mb-3">技能</h2>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {skills.map((s, i) => (<span key={i} className="text-xs font-semibold px-3 py-1 rounded-full" style={{ background: '#eeeeee', color: '#4a4a4a' }}>{s}</span>))}
-            </div>
-          </section>
-          <section className="mt-6">
-            <h2 className="text-lg font-bold border-b pb-2 mb-3">证书</h2>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {certs.map((s, i) => (<span key={i} className="bg-gray-100 text-gray-700 text-xs font-semibold px-3 py-1 rounded-full">{s}</span>))}
-            </div>
-          </section>
-          <div className="mt-6">
-            <button className="h-10 px-4 rounded-lg bg-primary text-white font-bold" onClick={saveWithRetry}>保存</button>
           </div>
-        </div>
-      </section>
+
+          <div className="h-px bg-border"></div>
+
+          {/* Experience */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-lg font-semibold text-primary">
+                <Briefcase className="h-5 w-5" />
+                <h3>Experience</h3>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setExperience(prev => [...prev, { company: '', role: '', from: '', to: '', highlights: '' }])}>
+                <Plus className="h-4 w-4 mr-1" /> Add
+              </Button>
+            </div>
+            <div className="space-y-4">
+              {experience.map((e, idx) => (
+                <Card key={idx} className="p-4 relative group space-y-3">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 text-destructive hover:text-destructive hover:bg-destructive/10 transition-opacity"
+                    onClick={() => setExperience(prev => prev.filter((_, i) => i !== idx))}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pr-8">
+                    <Input placeholder="Company" value={e.company} onChange={ev => setExperience(prev => prev.map((x, i) => i === idx ? { ...x, company: ev.target.value } : x))} />
+                    <Input placeholder="Role / Title" value={e.role} onChange={ev => setExperience(prev => prev.map((x, i) => i === idx ? { ...x, role: ev.target.value } : x))} />
+                    <Input placeholder="Start Date" value={e.from} onChange={ev => setExperience(prev => prev.map((x, i) => i === idx ? { ...x, from: ev.target.value } : x))} />
+                    <Input placeholder="End Date" value={e.to} onChange={ev => setExperience(prev => prev.map((x, i) => i === idx ? { ...x, to: ev.target.value } : x))} />
+                  </div>
+                  <Textarea
+                    placeholder="Key achievements and responsibilities (one per line)"
+                    value={e.highlights}
+                    onChange={ev => setExperience(prev => prev.map((x, i) => i === idx ? { ...x, highlights: ev.target.value } : x))}
+                    className="min-h-[100px]"
+                  />
+                </Card>
+              ))}
+              {experience.length === 0 && (
+                <div className="text-center p-4 border border-dashed rounded-lg text-muted-foreground text-sm">
+                  No experience added yet.
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="h-px bg-border"></div>
+
+          {/* Projects */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-lg font-semibold text-primary">
+                <FolderGit2 className="h-5 w-5" />
+                <h3>Projects</h3>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setProjects(prev => [...prev, { name: '', description: '', highlights: '' }])}>
+                <Plus className="h-4 w-4 mr-1" /> Add
+              </Button>
+            </div>
+            <div className="space-y-4">
+              {projects.map((p, idx) => (
+                <Card key={idx} className="p-4 relative group space-y-3">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 text-destructive hover:text-destructive hover:bg-destructive/10 transition-opacity"
+                    onClick={() => setProjects(prev => prev.filter((_, i) => i !== idx))}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pr-8">
+                    <Input placeholder="Project Name" value={p.name} onChange={ev => setProjects(prev => prev.map((x, i) => i === idx ? { ...x, name: ev.target.value } : x))} />
+                    <Input placeholder="Short Description" value={p.description} onChange={ev => setProjects(prev => prev.map((x, i) => i === idx ? { ...x, description: ev.target.value } : x))} />
+                  </div>
+                  <Textarea
+                    placeholder="Key features and tech stack (one per line)"
+                    value={p.highlights}
+                    onChange={ev => setProjects(prev => prev.map((x, i) => i === idx ? { ...x, highlights: ev.target.value } : x))}
+                    className="min-h-[100px]"
+                  />
+                </Card>
+              ))}
+              {projects.length === 0 && (
+                <div className="text-center p-4 border border-dashed rounded-lg text-muted-foreground text-sm">
+                  No projects added yet.
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="h-px bg-border"></div>
+
+          {/* Skills & Certs */}
+          <div className="grid grid-cols-1 gap-6">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-lg font-semibold text-primary">
+                <Wrench className="h-5 w-5" />
+                <h3>Skills</h3>
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Add a skill and press Enter"
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); const v = (e.target as HTMLInputElement).value.trim(); if (v) { setSkills(prev => [...prev, v]); (e.target as HTMLInputElement).value = ''; } } }}
+                />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {skills.map((s, i) => (
+                  <span key={i} className="bg-secondary text-secondary-foreground text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1">
+                    {s}
+                    <button onClick={() => setSkills(prev => prev.filter((_, idx) => idx !== i))} className="hover:text-destructive ml-1">×</button>
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-lg font-semibold text-primary">
+                <Award className="h-5 w-5" />
+                <h3>Certificates</h3>
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Add a certificate and press Enter"
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); const v = (e.target as HTMLInputElement).value.trim(); if (v) { setCerts(prev => [...prev, v]); (e.target as HTMLInputElement).value = ''; } } }}
+                />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {certs.map((s, i) => (
+                  <span key={i} className="bg-secondary text-secondary-foreground text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1">
+                    {s}
+                    <button onClick={() => setCerts(prev => prev.filter((_, idx) => idx !== i))} className="hover:text-destructive ml-1">×</button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+        </section>
+
+        {/* Preview Panel */}
+        <section className="hidden lg:flex flex-1 bg-muted/30 p-8 items-start justify-center overflow-y-auto relative">
+          <div className="fixed bottom-8 right-8 flex flex-col gap-2 z-30">
+            <Button variant="secondary" size="icon" onClick={() => setScale(prev => Math.min(1.5, +(prev + 0.1).toFixed(2)))} title="Zoom In">
+              <ZoomIn className="h-4 w-4" />
+            </Button>
+            <div className="bg-background text-xs font-medium py-1 px-2 rounded-md shadow text-center border">
+              {Math.round(scale * 100)}%
+            </div>
+            <Button variant="secondary" size="icon" onClick={() => setScale(prev => Math.max(0.5, +(prev - 0.1).toFixed(2)))} title="Zoom Out">
+              <ZoomOut className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <div
+            ref={previewRef}
+            className="bg-white shadow-2xl transition-transform duration-200 origin-top"
+            style={{
+              width: '210mm',
+              minHeight: '297mm',
+              padding: '40px',
+              transform: `scale(${scale})`,
+              marginBottom: `${(scale - 1) * 297}mm` // Add margin to allow scrolling when scaled up
+            }}
+          >
+            {/* Resume Content - Basic Modern Template Style */}
+            <header className="border-b-2 pb-6 mb-8" style={{ borderColor: color }}>
+              <h1 className="text-4xl font-bold tracking-tight mb-2" style={{ color }}>{form.fullName || 'Your Name'}</h1>
+              <p className="text-xl text-muted-foreground mb-4">{form.title || 'Professional Title'}</p>
+
+              <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
+                {form.phone && <span>{form.phone}</span>}
+                {form.email && <span>{form.email}</span>}
+                {form.linkedin && <span>{form.linkedin}</span>}
+                {form.portfolio && <span>{form.portfolio}</span>}
+              </div>
+            </header>
+
+            <div className="space-y-8">
+              {form.summary && (
+                <section>
+                  <h2 className="text-lg font-bold uppercase tracking-wider mb-3 border-b pb-1" style={{ color, borderColor: '#eee' }}>Professional Summary</h2>
+                  <div className="text-sm leading-relaxed text-gray-700" dangerouslySetInnerHTML={{ __html: renderMarkdown(form.summary) }} />
+                </section>
+              )}
+
+              {experience.length > 0 && (
+                <section>
+                  <h2 className="text-lg font-bold uppercase tracking-wider mb-4 border-b pb-1" style={{ color, borderColor: '#eee' }}>Experience</h2>
+                  <div className="space-y-6">
+                    {experience.map((e, i) => (
+                      <div key={i}>
+                        <div className="flex justify-between items-baseline mb-1">
+                          <h3 className="font-bold text-gray-900">{e.role}</h3>
+                          <span className="text-sm text-gray-500 whitespace-nowrap">{e.from} – {e.to}</span>
+                        </div>
+                        <p className="text-sm font-medium text-gray-700 mb-2">{e.company}</p>
+                        <ul className="list-disc list-outside ml-4 text-sm text-gray-600 space-y-1">
+                          {e.highlights.split('\n').filter(Boolean).map((h, idx) => (
+                            <li key={idx}>{h}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {projects.length > 0 && (
+                <section>
+                  <h2 className="text-lg font-bold uppercase tracking-wider mb-4 border-b pb-1" style={{ color, borderColor: '#eee' }}>Projects</h2>
+                  <div className="space-y-5">
+                    {projects.map((p, i) => (
+                      <div key={i}>
+                        <div className="flex justify-between items-baseline mb-1">
+                          <h3 className="font-bold text-gray-900">{p.name}</h3>
+                        </div>
+                        <p className="text-sm text-gray-700 mb-2 italic">{p.description}</p>
+                        <ul className="list-disc list-outside ml-4 text-sm text-gray-600 space-y-1">
+                          {p.highlights.split('\n').filter(Boolean).map((h, idx) => (
+                            <li key={idx}>{h}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {education.length > 0 && (
+                <section>
+                  <h2 className="text-lg font-bold uppercase tracking-wider mb-4 border-b pb-1" style={{ color, borderColor: '#eee' }}>Education</h2>
+                  <div className="space-y-4">
+                    {education.map((e, i) => (
+                      <div key={i}>
+                        <div className="flex justify-between items-baseline">
+                          <h3 className="font-bold text-gray-900">{e.school}</h3>
+                          <span className="text-sm text-gray-500">{e.year}</span>
+                        </div>
+                        <p className="text-sm text-gray-700">{e.degree}</p>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {(skills.length > 0 || certs.length > 0) && (
+                <div className="grid grid-cols-2 gap-8">
+                  {skills.length > 0 && (
+                    <section>
+                      <h2 className="text-lg font-bold uppercase tracking-wider mb-3 border-b pb-1" style={{ color, borderColor: '#eee' }}>Skills</h2>
+                      <div className="flex flex-wrap gap-2">
+                        {skills.map((s, i) => (
+                          <span key={i} className="text-sm bg-gray-100 px-2 py-1 rounded text-gray-700">{s}</span>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+
+                  {certs.length > 0 && (
+                    <section>
+                      <h2 className="text-lg font-bold uppercase tracking-wider mb-3 border-b pb-1" style={{ color, borderColor: '#eee' }}>Certificates</h2>
+                      <ul className="list-disc list-outside ml-4 text-sm text-gray-600 space-y-1">
+                        {certs.map((c, i) => (
+                          <li key={i}>{c}</li>
+                        ))}
+                      </ul>
+                    </section>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
       </main>
+
+      {shareUrl && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-background border shadow-lg rounded-lg p-4 flex items-center gap-4 animate-in slide-in-from-bottom-5 min-w-[500px]">
+          <div className="flex items-center gap-3 flex-1">
+            <div className="text-sm font-medium whitespace-nowrap">Share Link:</div>
+            <Input value={shareUrl} readOnly className="h-9 text-sm" onClick={e => e.currentTarget.select()} />
+          </div>
+          <div className="flex gap-3">
+            <div className="flex flex-col items-center gap-1">
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-9 w-9 p-0"
+                onClick={() => {
+                  navigator.clipboard.writeText(shareUrl)
+                  alert('链接已复制到剪贴板')
+                }}
+                title="copy"
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+              <span className="text-xs text-muted-foreground">copy</span>
+            </div>
+            <div className="flex flex-col items-center gap-1">
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-9 w-9 p-0"
+                onClick={() => window.open(shareUrl, '_blank')}
+                title="open"
+              >
+                <ExternalLink className="h-4 w-4" />
+              </Button>
+              <span className="text-xs text-muted-foreground">open</span>
+            </div>
+            <div className="flex flex-col items-center gap-1">
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-9 w-9 p-0"
+                onClick={() => setShareUrl('')}
+                title="close"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+              <span className="text-xs text-muted-foreground">close</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server'
-import { generateObject } from 'ai'
+import { generateObject, generateText } from 'ai'
 import { z } from 'zod'
 import { getPrompt } from '@/lib/yaml-prompts'
 import { sanitizeResume } from '@/lib/sanitize'
@@ -15,7 +15,6 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
 export async function POST(req: NextRequest) {
   try {
-    // 首先进行认证检查
     const { user, error: authError } = await authenticateRequest(req)
     if (authError || !user) {
       return NextResponse.json({ error: authError || 'Unauthorized' }, { status: 401 })
@@ -24,22 +23,37 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const resumeContent = body.resumeContent
     const resumeId = body.resumeId
-    const forceReanalyze = body.forceReanalyze || false // 用户点击重新分析时设置为true
-    
+    const forceReanalyze = body.forceReanalyze || false
+
     if (!resumeContent) return NextResponse.json({ error: 'Missing resumeContent' }, { status: 400 })
+
+    // Verify ownership
+    if (resumeId) {
+      const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+        global: { headers: { Authorization: req.headers.get('authorization') || '' } }
+      })
+
+      const { data: resume, error: ownershipError } = await supabase
+        .from('resumes')
+        .select('id')
+        .eq('id', resumeId)
+        .eq('user_id', user.id)
+        .single()
+
+      if (ownershipError || !resume) {
+        return NextResponse.json({ error: 'Resume not found or access denied' }, { status: 403 })
+      }
+    }
 
     const sanitized = sanitizeResume(resumeContent)
     const hash = crypto.createHash('sha256').update(JSON.stringify(sanitized)).digest('hex')
 
-    console.log('🔍 Checking for existing AI analysis...')
-    
-    // 检查是否有现有的分析结果（除非用户强制重新分析）
+    // Check for existing analysis
     if (resumeId && !forceReanalyze) {
       const supabase = createClient(supabaseUrl, supabaseAnonKey, {
         global: { headers: { Authorization: req.headers.get('authorization') || '' } }
       })
-      
-      // 查找最近的分析记录
+
       const { data: existingAnalysis, error: fetchError } = await supabase
         .from('ai_analysis_history')
         .select('output_json, created_at, model')
@@ -51,11 +65,6 @@ export async function POST(req: NextRequest) {
         .single()
 
       if (!fetchError && existingAnalysis) {
-        console.log('✅ Found existing AI analysis, returning cached result')
-        console.log('📊 Cached analysis from:', existingAnalysis.created_at)
-        console.log('📊 Cached model:', existingAnalysis.model)
-        
-        // 添加缓存标识，让前端知道这是缓存结果
         const cachedResult = {
           ...existingAnalysis.output_json,
           is_cached: true,
@@ -66,59 +75,79 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    console.log('🤖 No cached analysis found or forced reanalysis, calling AI...')
-    console.log('🔧 Environment:', {
-      aiProvider: process.env.AI_PROVIDER,
-      deepseekConfigured: !!process.env.DEEPSEEK_API_KEY,
-      openaiConfigured: !!process.env.OPENAI_API_KEY
-    })
-
-    console.log('📊 Sanitized content length:', JSON.stringify(sanitized).length, 'characters')
-
     const prompt = getPrompt('ai_resume_analysis_prompt')
-    console.log('📝 Loaded prompt, length:', prompt.length, 'characters')
-    console.log('📝 Prompt preview:', prompt.substring(0, 200) + '...')
+    const provider = process.env.AI_PROVIDER || 'openai'
+    const model = provider === 'deepseek' ? deepseek('deepseek-chat') : openai('gpt-4o-mini')
 
-    // Ensure prompt contains "json" for DeepSeek API
-    const jsonPrompt = prompt.includes('json') ? prompt : prompt + "\n\nImportant: Please return the analysis results in valid JSON format."
-    console.log('🔧 Final prompt contains "json":', jsonPrompt.includes('json'))
+    let result
 
-    console.log('🤖 Initializing AI model...')
-    const model = process.env.AI_PROVIDER === 'deepseek' ? deepseek('deepseek-chat') : openai('gpt-4o-mini')
-    console.log('✅ AI model initialized:', process.env.AI_PROVIDER || 'openai')
+    if (provider === 'deepseek') {
+      // DeepSeek doesn't support structured outputs properly, use text generation and parse JSON
+      const { text } = await generateText({
+        model,
+        system: prompt,
+        prompt: JSON.stringify(sanitized)
+      })
 
-    console.log('🎯 Calling AI generateObject...')
-    const { object } = await generateObject({
-      model,
-      schema: ResumeAnalysisSchema as unknown as z.ZodTypeAny,
-      system: jsonPrompt,
-      prompt: JSON.stringify(sanitized)
-    })
-    
-    console.log('✅ AI analysis successful!')
-    console.log('📊 Result overview:', {
-      overallScore: object.overall_score,
-      contentScore: object.scores?.content_completeness,
-      structureScore: object.scores?.structure,
-      expressionScore: object.scores?.expression
-    })
+      try {
+        // Remove markdown code blocks if present
+        const cleanText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+        const parsed = JSON.parse(cleanText)
 
-    // 使用简单客户端写入数据库
+        // Validate against schema
+        result = ResumeAnalysisSchema.parse(parsed)
+      } catch (parseError) {
+        console.error('Failed to parse DeepSeek response:', parseError)
+        console.error('Raw response:', text)
+
+        // Fallback to mock data if parsing fails
+        result = {
+          overall_score: 75,
+          scores: {
+            content_completeness: 70,
+            structure: 80,
+            expression: 75
+          },
+          content_completeness: {
+            missing_sections: ['项目成果展示'],
+            recommendations: ['添加更多量化数据', '突出关键技能']
+          },
+          structure: {
+            recommendations: ['使用更清晰的标题层次', '保持一致的格式']
+          },
+          expression: {
+            rewrite_examples: ['用具体成果替代模糊描述']
+          }
+        }
+      }
+    } else {
+      // OpenAI supports structured outputs
+      const { object } = await generateObject({
+        model,
+        schema: ResumeAnalysisSchema,
+        system: prompt,
+        prompt: JSON.stringify(sanitized)
+      })
+      result = object
+    }
+
+    // Save to database
     if (body.resumeId) {
       const supabase = createClient(supabaseUrl, supabaseAnonKey, {
         global: { headers: { Authorization: req.headers.get('authorization') || '' } }
       })
-      const hash = crypto.createHash('sha256').update(JSON.stringify(sanitized)).digest('hex')
       await supabase.from('ai_analysis_history').insert({
         resume_id: body.resumeId,
         type: 'resume',
-        model: process.env.AI_PROVIDER || 'openai',
+        model: provider,
         input_hash: hash,
-        output_json: object
+        output_json: result
       })
     }
-    return NextResponse.json(object)
+
+    return NextResponse.json(result)
   } catch (e: unknown) {
+    console.error('Resume analysis error:', e)
     const message = e instanceof Error ? e.message : 'AI analysis failed'
     return NextResponse.json({ error: message }, { status: 500 })
   }

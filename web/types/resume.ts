@@ -1,5 +1,8 @@
 export type ResumeContent = {
   personal?: {
+    full_name?: string
+    email?: string
+    phone?: string
     title?: string
     linkedin?: string
     portfolio?: string

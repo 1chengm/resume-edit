@@ -69,12 +69,12 @@ export async function POST(req: NextRequest) {
       console.error('Avatar upload error:', upErr)
       console.error('Upload error details:', {
         message: upErr.message,
-        statusCode: upErr.statusCode || 'unknown',
-        error: upErr.error
+        statusCode: (upErr as any).statusCode || 'unknown',
+        error: (upErr as any).error
       })
       return NextResponse.json({
         error: `Upload failed: ${upErr.message}`,
-        details: upErr.error || 'No additional details'
+        details: (upErr as any).error || 'No additional details'
       }, {
         status: 500,
         headers
@@ -116,7 +116,7 @@ export async function POST(req: NextRequest) {
           console.error('Profile insert error:', insertError)
           return NextResponse.json({
             error: `Profile creation failed: ${insertError.message}`,
-            details: insertError.error || 'No additional details'
+            details: (insertError as any).error || 'No additional details'
           }, {
             status: 500,
             headers
@@ -126,7 +126,7 @@ export async function POST(req: NextRequest) {
       } else {
         return NextResponse.json({
           error: `Profile update failed: ${updateError.message}`,
-          details: updateError.error || 'No additional details'
+          details: (updateError as any).error || 'No additional details'
         }, {
           status: 500,
           headers

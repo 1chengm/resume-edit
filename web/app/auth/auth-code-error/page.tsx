@@ -1,9 +1,9 @@
 'use client'
-import React from 'react'
+import React, { Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { getSupabaseClient } from '@/src/lib/supabaseClient'
 
-export default function AuthCodeErrorPage() {
+function AuthCodeErrorContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = getSupabaseClient()
@@ -18,7 +18,7 @@ export default function AuthCodeErrorPage() {
     const hash = window.location.hash
 
     const accessToken = urlParams.get('access_token') ||
-                      (hash.includes('access_token') ? new URLSearchParams(hash.substring(1)).get('access_token') : null)
+      (hash.includes('access_token') ? new URLSearchParams(hash.substring(1)).get('access_token') : null)
 
     if (accessToken) {
       console.log('Found access token in URL, attempting client-side session setup...')
@@ -26,22 +26,22 @@ export default function AuthCodeErrorPage() {
       const setupSession = async () => {
         try {
           const { data, error } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: hash ? new URLSearchParams(hash.substring(1)).get('refresh_token') : null
+            access_token: accessToken || '',
+            refresh_token: (hash ? new URLSearchParams(hash.substring(1)).get('refresh_token') : '') || ''
           })
-          
+
           if (!error && data.user) {
             console.log('✅ Client-side session setup successful')
             router.push('/dashboard')
             return
           }
-          
+
           console.error('❌ Client-side session setup failed:', error)
         } catch (err) {
           console.error('💥 Client-side session setup error:', err)
         }
       }
-      
+
       setupSession()
     }
   }, [router, supabase.auth])
@@ -49,11 +49,11 @@ export default function AuthCodeErrorPage() {
   async function retryGithub() {
     const site = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
     try {
-      await supabase.auth.signInWithOAuth({ 
-        provider: 'github', 
-        options: { 
-          redirectTo: `${site}/auth/callback?next=/dashboard` 
-        } 
+      await supabase.auth.signInWithOAuth({
+        provider: 'github',
+        options: {
+          redirectTo: `${site}/auth/callback?next=/dashboard`
+        }
       })
     } catch (error) {
       console.error('Failed to retry GitHub login:', error)
@@ -125,13 +125,13 @@ export default function AuthCodeErrorPage() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3">
-            <button 
+            <button
               onClick={goToSignIn}
               className="flex-1 h-10 rounded-lg bg-[#e5e7eb] dark:bg-slate-700 px-4 text-[#0d141b] dark:text-slate-50 hover:bg-[#dfe3e7] dark:hover:bg-slate-600 transition-colors"
             >
               返回登录页
             </button>
-            <button 
+            <button
               onClick={retryGithub}
               className="flex-1 h-10 rounded-lg bg-primary px-4 text-white hover:bg-primary/90 transition-colors"
             >
@@ -139,7 +139,7 @@ export default function AuthCodeErrorPage() {
             </button>
           </div>
 
-          <button 
+          <button
             onClick={goHome}
             className="w-full h-10 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-transparent text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
           >
@@ -154,5 +154,13 @@ export default function AuthCodeErrorPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function AuthCodeErrorPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-svh w-full items-center justify-center">Loading...</div>}>
+      <AuthCodeErrorContent />
+    </Suspense>
   )
 }

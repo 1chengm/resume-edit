@@ -11,10 +11,10 @@ export async function POST(req: NextRequest) {
 
     const browser = await puppeteer.launch({
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'] 
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
     const page = await browser.newPage()
-    
+
     // Set the content of the page
     await page.setContent(html, { waitUntil: 'networkidle0' })
 
@@ -31,10 +31,10 @@ export async function POST(req: NextRequest) {
 
     await browser.close()
 
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(pdfBuffer as any, {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="download.pdf"`,
+        'Content-Disposition': 'attachment; filename="download.pdf"',
       },
     })
   } catch (error) {

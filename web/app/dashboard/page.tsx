@@ -3,6 +3,29 @@ import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getSupabaseClient } from '@/src/lib/supabaseClient'
 import { authenticatedFetch } from '@/src/lib/authenticatedFetch'
+import { SessionCheck } from '@/components/auth/session-check'
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  LayoutDashboard,
+  FileText,
+  Plus,
+  Search,
+  MoreHorizontal,
+  Edit,
+  Eye,
+  Sparkles,
+  Target,
+  LogOut,
+  Settings,
+  HelpCircle,
+  User,
+  Clock,
+  Filter,
+  SortAsc
+} from "lucide-react"
+import Link from "next/link"
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -20,37 +43,39 @@ export default function DashboardPage() {
   useEffect(() => {
     if (missingConfig) return
     const supabase = getSupabaseClient()
-    ;(async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push('/sign-in'); return }
-      setUserEmail(user.email || '')
+      ; (async () => {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) { router.push('/sign-in'); return }
+        setUserEmail(user.email || '')
 
-      const { data: profileData } = await supabase.from('profiles').select('*').eq('user_id', user.id).single()
-      if (profileData) {
-        setProfile(profileData)
-      }
-
-      const { data } = await supabase.from('resumes').select('id,title,updated_at,template,color_theme').order('updated_at', { ascending: false })
-      const now = Date.now()
-      const mapped = (data || []).map(d => {
-        const dt = new Date(d.updated_at)
-        const diff = Math.max(0, now - dt.getTime())
-        const days = Math.floor(diff / (24 * 3600 * 1000))
-        let txt = ''
-        if (days >= 7) txt = `更新于 ${Math.floor(days / 7)} 周前`
-        else if (days >= 1) txt = `更新于 ${days} 天前`
-        else {
-          const hours = Math.floor(diff / (3600 * 1000))
-          if (hours >= 1) txt = `更新于 ${hours} 小时前`
-          else {
-            const mins = Math.floor(diff / (60 * 1000))
-            txt = `更新于 ${mins} 分钟前`
-          }
+        const { data: profileData } = await supabase.from('profiles').select('*').eq('user_id', user.id).single()
+        if (profileData) {
+          setProfile(profileData)
         }
-        return { ...d, updated_text: txt }
-      })
-      setItems(mapped)
-    })()
+
+        // Use authenticated API endpoint to ensure proper user isolation
+        const response = await authenticatedFetch('/api/resumes')
+        const { items } = await response.json()
+        const now = Date.now()
+        const mapped = (items || []).map((d: any) => {
+          const dt = new Date(d.updated_at)
+          const diff = Math.max(0, now - dt.getTime())
+          const days = Math.floor(diff / (24 * 3600 * 1000))
+          let txt = ''
+          if (days >= 7) txt = `${Math.floor(days / 7)} weeks ago`
+          else if (days >= 1) txt = `${days} days ago`
+          else {
+            const hours = Math.floor(diff / (3600 * 1000))
+            if (hours >= 1) txt = `${hours} hours ago`
+            else {
+              const mins = Math.floor(diff / (60 * 1000))
+              txt = `${mins} mins ago`
+            }
+          }
+          return { ...d, updated_text: txt }
+        })
+        setItems(mapped)
+      })()
   }, [missingConfig, url, key, router])
 
   const filtered = useMemo(() => {
@@ -59,169 +84,241 @@ export default function DashboardPage() {
     return items.filter(it => it.title.toLowerCase().includes(q))
   }, [items, query])
 
-  function formatUpdatedText(txt?: string, fallback?: string) {
-    return txt || fallback || ''
+  async function handleCreate(templateId: string, color: string, name: string) {
+    setCreating(true)
+    try {
+      const res = await authenticatedFetch('/api/resumes', {
+        method: 'POST',
+        body: JSON.stringify({ template: templateId, color_theme: color, title: `${name} Resume` })
+      })
+      const data = await res.json()
+      if (!res.ok || !data?.id) {
+        alert(data.error || 'Failed to create resume')
+        return
+      }
+      setChooserOpen(false)
+      router.push(`/resume/${data.id}/edit`)
+    } finally {
+      setCreating(false)
+    }
   }
 
   if (missingConfig) return (
-    <main className="p-8 mx-auto max-w-3xl">
-      <h1 className="text-2xl font-bold">我的简历</h1>
-      <p className="text-gray-500 mt-2">缺少 Supabase 配置</p>
-    </main>
+    <div className="flex h-screen items-center justify-center">
+      <Card className="w-96">
+        <CardHeader>
+          <CardTitle className="text-destructive">Configuration Error</CardTitle>
+        </CardHeader>
+        <CardContent>
+          Missing Supabase configuration. Please check your environment variables.
+        </CardContent>
+      </Card>
+    </div>
   )
 
   return (
     <>
-    <div className="relative flex min-h-screen w-full flex-col">
-      <div className="flex h-full min-h-screen">
-        <aside className="flex w-64 flex-col border-r border-[#EAEAEA] bg-white p-4">
-          <div className="flex h-full min-h-[700px] flex-col justify-between">
-            <div className="flex flex-col gap-6">
-              <div className="flex items-center gap-3 px-3">
-                <span className="material-symbols-outlined text-primary text-3xl">article</span>
-                <h1 className="text-xl font-bold">简历助手</h1>
-              </div>
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-3 rounded-lg bg-primary/20 px-3 py-2 text-primary">
-                  <span className="material-symbols-outlined">dashboard</span>
-                  <p className="text-sm font-semibold">仪表盘</p>
-                </div>
-                <div className="flex items-center gap-3 px-3 py-2 text-[#AAB8C2] hover:text-[#2C3E50] cursor-pointer">
-                  <span className="material-symbols-outlined">work_history</span>
-                  <p className="text-sm font-medium">投递追踪</p>
-                </div>
-                <div className="flex items-center gap-3 px-3 py-2 text-[#AAB8C2] hover:text-[#2C3E50] cursor-pointer">
-                  <span className="material-symbols-outlined">feed</span>
-                  <p className="text-sm font-medium">模板库</p>
-                </div>
-              </div>
+      <SessionCheck />
+      <div className="flex min-h-screen bg-muted/10">
+        {/* Sidebar */}
+        <aside className="w-64 bg-background border-r hidden md:flex flex-col">
+          <div className="p-6 border-b">
+            <div className="flex items-center gap-2 font-bold text-xl text-primary">
+              <FileText className="h-6 w-6" />
+              <span>ResumeCraft</span>
             </div>
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-3 px-3 py-2 text-[#AAB8C2] hover:text-[#2C3E50] cursor-pointer">
-                  <span className="material-symbols-outlined">account_circle</span>
-                  <p className="text-sm font-medium">账号设置</p>
-                </div>
-                <div className="flex items-center gap-3 px-3 py-2 text-[#AAB8C2] hover:text-[#2C3E50] cursor-pointer">
-                  <span className="material-symbols-outlined">help</span>
-                  <p className="text-sm font-medium">帮助中心</p>
-                </div>
+          </div>
+
+          <nav className="flex-1 p-4 space-y-2">
+            <Button variant="secondary" className="w-full justify-start gap-2">
+              <LayoutDashboard className="h-4 w-4" />
+              Dashboard
+            </Button>
+            <Button variant="ghost" className="w-full justify-start gap-2 text-muted-foreground">
+              <Clock className="h-4 w-4" />
+              History
+            </Button>
+            <Button variant="ghost" className="w-full justify-start gap-2 text-muted-foreground">
+              <FileText className="h-4 w-4" />
+              Templates
+            </Button>
+          </nav>
+
+          <div className="p-4 border-t space-y-2">
+            <Link href="/profile">
+              <Button variant="ghost" className="w-full justify-start gap-2 text-muted-foreground">
+                <Settings className="h-4 w-4" />
+                Settings
+              </Button>
+            </Link>
+            <Button variant="ghost" className="w-full justify-start gap-2 text-muted-foreground">
+              <HelpCircle className="h-4 w-4" />
+              Help Center
+            </Button>
+
+            <div className="flex items-center gap-3 mt-4 p-2 rounded-lg bg-muted/50">
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt="Avatar" className="h-10 w-10 rounded-full object-cover" />
+                ) : (
+                  <User className="h-5 w-5" />
+                )}
               </div>
-              <div className="border-t border-[#EAEAEA] pt-4">
-                <a href="/profile" className="flex gap-3">
-                  <div className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10" style={{ backgroundImage: `url(${profile?.avatar_url || '/default-avatar.png'})`}}></div>
-                  <div className="flex flex-col">
-                    <h1 className="text-sm font-semibold">{profile?.display_name || '用户'}</h1>
-                    <p className="text-xs text-[#AAB8C2]">{userEmail}</p>
-                  </div>
-                </a>
+              <div className="flex-1 overflow-hidden">
+                <p className="text-sm font-medium truncate">{profile?.display_name || 'User'}</p>
+                <p className="text-xs text-muted-foreground truncate">{userEmail}</p>
               </div>
             </div>
           </div>
         </aside>
-        <main className="flex-1 p-8">
-          <div className="mx-auto flex max-w-7xl flex-col gap-6">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <p className="text-3xl font-black tracking-tight">我的简历</p>
-              <button className="flex min-w-[84px] items-center justify-center gap-2 rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold shadow-sm hover:bg-primary/90" onClick={() => setChooserOpen(true)} disabled={creating}>
-                <span className="material-symbols-outlined !text-lg">add_circle</span>
-                <span className="truncate">{creating ? '创建中...' : '新建简历'}</span>
-              </button>
+
+        {/* Main Content */}
+        <main className="flex-1 flex flex-col">
+          <header className="h-16 border-b bg-background/80 backdrop-blur-sm flex items-center justify-between px-6 sticky top-0 z-10">
+            <h1 className="text-xl font-semibold">My Resumes</h1>
+            <div className="flex items-center gap-4">
+              <Button onClick={() => setChooserOpen(true)} disabled={creating}>
+                <Plus className="h-4 w-4 mr-2" />
+                {creating ? 'Creating...' : 'New Resume'}
+              </Button>
             </div>
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div className="flex-grow max-w-md">
-                <label className="flex flex-col min-w-40 h-10 w-full">
-                  <div className="flex w-full items-stretch rounded-lg h-full">
-                    <div className="flex items-center justify-center pl-3 pr-2 bg-white rounded-l-lg border border-[#EAEAEA]">
-                      <span className="material-symbols-outlined !text-2xl">search</span>
-                    </div>
-                    <input className="form-input flex w-full min-w-0 flex-1 rounded-lg text-sm placeholder:text-[#AAB8C2] focus:outline-0 focus:ring-2 focus:ring-primary/50 border h-full px-2 rounded-l-none border-l-0 bg-white border-[#EAEAEA]" placeholder="按标题搜索简历" value={query} onChange={e=>setQuery(e.target.value)} />
-                  </div>
-                </label>
+          </header>
+
+          <div className="p-6 md:p-8 max-w-7xl mx-auto w-full space-y-8">
+            {/* Filters */}
+            <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+              <div className="relative w-full sm:w-96">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search resumes..."
+                  className="pl-9 bg-background"
+                  value={query}
+                  onChange={e => setQuery(e.target.value)}
+                />
               </div>
-              <div className="flex gap-2">
-                <details className="relative">
-                  <summary className="flex h-10 cursor-pointer items-center justify-center gap-x-2 rounded-lg bg-white px-3 text-sm font-medium border border-[#EAEAEA] list-none">
-                    <p>排序：更新时间</p>
-                    <span className="material-symbols-outlined">arrow_drop_down</span>
-                  </summary>
-                  <div className="absolute right-0 z-10 mt-1 w-40 rounded-lg border border-[#EAEAEA] bg-white shadow-sm">
-                    <button className="block w-full px-3 py-2 text-left text-sm hover:bg-gray-50">更新时间</button>
-                    <button className="block w-full px-3 py-2 text-left text-sm hover:bg-gray-50">标题</button>
-                  </div>
-                </details>
-                <details className="relative">
-                  <summary className="flex h-10 cursor-pointer items-center justify-center gap-x-2 rounded-lg bg-white px-3 text-sm font-medium border border-[#EAEAEA] list-none">
-                    <p>筛选：全部</p>
-                    <span className="material-symbols-outlined">arrow_drop_down</span>
-                  </summary>
-                  <div className="absolute right-0 z-10 mt-1 w-40 rounded-lg border border-[#EAEAEA] bg-white shadow-sm">
-                    <button className="block w-full px-3 py-2 text-left text-sm hover:bg-gray-50">全部</button>
-                    <button className="block w-full px-3 py-2 text-left text-sm hover:bg-gray-50">近期更新</button>
-                  </div>
-                </details>
+              <div className="flex gap-2 w-full sm:w-auto">
+                <Button variant="outline" size="sm" className="gap-2">
+                  <SortAsc className="h-4 w-4" />
+                  Sort
+                </Button>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Filter className="h-4 w-4" />
+                  Filter
+                </Button>
               </div>
             </div>
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {filtered.map((it) => (
-                <div key={it.id} className="flex flex-col justify-between gap-4 rounded-xl bg-white p-5 shadow-sm border border-[#EAEAEA]">
-                  <div className="flex flex-col gap-2">
-                    <p className="text-sm text-[#AAB8C2]">{formatUpdatedText(it.updated_text, new Date(it.updated_at).toLocaleDateString())}</p>
-                    <p className="text-lg font-bold">{it.title}</p>
-                  </div>
-                  <div className="flex items-center justify-between border-t border-[#EAEAEA] pt-4">
-                    <div className="flex items-center gap-1">
-                      <a className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-primary/20 text-[#AAB8C2] hover:text-primary" href={`/resume/${it.id}/edit`} title="Edit"><span className="material-symbols-outlined">edit</span></a>
-                      <a className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-primary/20 text-[#AAB8C2] hover:text-primary" href={`/resume/${it.id}/export-share`} title="Preview"><span className="material-symbols-outlined">visibility</span></a>
-                      <a className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-[#50E3C2]/20 text-[#50E3C2]" href={`/resume/${it.id}/analysis`} title="AI Analyze"><span className="material-symbols-outlined">auto_awesome</span></a>
-                      <a className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-[#F5A623]/20 text-[#F5A623]" href={`/resume/${it.id}/jd-match`} title="JD Match"><span className="material-symbols-outlined">target</span></a>
-                    </div>
-                    <a className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-primary/20 text-[#AAB8C2] hover:text-primary" href={`/resume/${it.id}/export-share`} title="More Options"><span className="material-symbols-outlined">more_horiz</span></a>
-                  </div>
+
+            {/* Grid */}
+            {filtered.length === 0 ? (
+              <div className="text-center py-20">
+                <div className="h-20 w-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                  <FileText className="h-10 w-10 text-muted-foreground" />
                 </div>
-              ))}
-            </div>
+                <h3 className="text-lg font-medium">No resumes found</h3>
+                <p className="text-muted-foreground mb-6">Create your first resume to get started.</p>
+                <Button onClick={() => setChooserOpen(true)}>Create Resume</Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filtered.map((item) => (
+                  <Card key={item.id} className="group hover:shadow-md transition-all duration-200 border-muted/60">
+                    <CardHeader className="pb-3">
+                      <div className="flex justify-between items-start">
+                        <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-2">
+                          <FileText className="h-6 w-6" />
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <CardTitle className="text-lg">{item.title}</CardTitle>
+                      <p className="text-xs text-muted-foreground">Updated {item.updated_text}</p>
+                    </CardHeader>
+                    <CardFooter className="pt-2 border-t bg-muted/5 flex justify-between items-center px-4 py-3">
+                      <div className="flex gap-1">
+                        <Link href={`/resume/${item.id}/edit`}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-primary" title="Edit">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                        <Link href={`/resume/${item.id}/export-share`}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-primary" title="Preview">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                      </div>
+                      <div className="flex gap-1">
+                        <Link href={`/resume/${item.id}/analysis`}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-indigo-500 hover:text-indigo-600 hover:bg-indigo-50" title="AI Analysis">
+                            <Sparkles className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                        <Link href={`/resume/${item.id}/jd-match`}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-orange-500 hover:text-orange-600 hover:bg-orange-50" title="JD Match">
+                            <Target className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                      </div>
+                    </CardFooter>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
         </main>
-      </div>
-    </div>
-    {chooserOpen && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-        <div className="w-full max-w-3xl rounded-xl bg-white shadow-lg border border-[#EAEAEA]">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-[#EAEAEA]">
-            <p className="text-lg font-bold">选择模板</p>
-            <button className="size-8 rounded-lg hover:bg-gray-100 flex items-center justify-center" onClick={() => setChooserOpen(false)}><span className="material-symbols-outlined">close</span></button>
+
+        {/* Template Chooser Modal */}
+        {chooserOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <Card className="w-full max-w-4xl max-h-[90vh] overflow-auto shadow-2xl">
+              <CardHeader className="border-b sticky top-0 bg-background z-10 flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Choose a Template</CardTitle>
+                  <p className="text-sm text-muted-foreground mt-1">Select a design to start your resume</p>
+                </div>
+                <Button variant="ghost" size="icon" onClick={() => setChooserOpen(false)}>
+                  <LogOut className="h-5 w-5 rotate-45" />
+                </Button>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {[
+                    { id: 'Modern', name: 'Modern', desc: 'Clean and professional, perfect for tech.', color: '#2b8cee' },
+                    { id: 'Classic', name: 'Classic', desc: 'Traditional and elegant, for corporate roles.', color: '#0d141b' },
+                    { id: 'Creative', name: 'Creative', desc: 'Bold and unique, for creative fields.', color: '#F5A623' }
+                  ].map((t) => (
+                    <div
+                      key={t.id}
+                      className="group cursor-pointer rounded-xl border hover:border-primary hover:shadow-lg transition-all overflow-hidden"
+                      onClick={() => handleCreate(t.id, t.color, t.name)}
+                    >
+                      <div
+                        className="h-40 w-full bg-muted relative"
+                        style={{ background: `linear-gradient(135deg, ${t.color}20 0%, ${t.color}10 100%)` }}
+                      >
+                        <div className="absolute inset-4 bg-white shadow-sm rounded border opacity-80 group-hover:scale-105 transition-transform duration-300 flex flex-col p-2 gap-2">
+                          <div className="h-2 w-1/3 rounded-full" style={{ background: t.color }}></div>
+                          <div className="h-1 w-3/4 bg-muted rounded-full"></div>
+                          <div className="h-1 w-1/2 bg-muted rounded-full"></div>
+                          <div className="mt-2 space-y-1">
+                            <div className="h-1 w-full bg-muted/50 rounded-full"></div>
+                            <div className="h-1 w-full bg-muted/50 rounded-full"></div>
+                            <div className="h-1 w-full bg-muted/50 rounded-full"></div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="p-4">
+                        <h3 className="font-semibold">{t.name}</h3>
+                        <p className="text-sm text-muted-foreground">{t.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           </div>
-          <div className="p-6">
-            <div className="mb-4">
-              <div className="flex gap-2">
-                <span className="px-3 py-1 rounded-full text-sm bg-gray-100">基础版</span>
-                <span className="px-3 py-1 rounded-full text-sm bg-gray-100">专业版</span>
-                <span className="px-3 py-1 rounded-full text-sm bg-gray-100">创意版</span>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {[{ id: 'Modern', name: '现代·基础', desc: '简洁清晰，适合技术岗位', color: '#2b8cee' }, { id: 'Classic', name: '经典·专业', desc: '稳重规范，适合管理岗位', color: '#0d141b' }, { id: 'Creative', name: '创意·亮色', desc: '视觉突出，适合设计岗位', color: '#F5A623' }].map(t => (
-                <button key={t.id} className="text-left rounded-xl border border-[#EAEAEA] bg-white hover:bg-gray-50 p-4" onClick={async () => {
-                  setCreating(true)
-                  try {
-                    const res = await authenticatedFetch('/api/resumes', { method: 'POST', body: JSON.stringify({ template: t.id, color_theme: t.color, title: `${t.name} 简历` }) })
-                    const data = await res.json()
-                    if (!res.ok || !data?.id) { alert(data.error || '创建失败'); setCreating(false); return }
-                    setChooserOpen(false)
-                    router.push(`/resume/${data.id}/edit`)
-                  } finally { setCreating(false) }
-                }}>
-                  <div className="h-28 rounded-lg border border-[#EAEAEA] mb-3" style={{ background: `linear-gradient(90deg, ${t.color} 0%, ${t.color} 12px, #fff 12px)` }}></div>
-                  <p className="text-sm font-semibold">{t.name}</p>
-                  <p className="text-xs text-[#AAB8C2]">{t.desc}</p>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
+        )}
       </div>
-    )}
     </>
   )
 }
