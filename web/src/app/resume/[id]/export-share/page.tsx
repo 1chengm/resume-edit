@@ -1,1 +1,0 @@
-export { default } from '../../../../../app/resume/[id]/export-share/page'
