@@ -1,6 +1,6 @@
 'use client'
 import { createClient } from '@/src/lib/supabase/client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -30,6 +30,17 @@ export default function SignInPage() {
     mode: 'onChange',
     defaultValues: { email: '', password: '', remember: true },
   })
+
+  // Check if user is already logged in
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) {
+        router.replace('/dashboard')
+      }
+    }
+    checkSession()
+  }, [router, supabase.auth])
 
   async function signInWithEmail(values: SignInFormValues) {
     setLoading(true)

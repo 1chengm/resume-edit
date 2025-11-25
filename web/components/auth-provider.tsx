@@ -2,6 +2,7 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
 
 interface AuthContextType {
   user: User | null
@@ -15,6 +16,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const router = useRouter()
 
   useEffect(() => {
     // 获取初始会话
@@ -23,6 +25,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { data: { session } } = await supabase.auth.getSession()
         console.log('Initial session:', session?.user?.email)
         setUser(session?.user ?? null)
+
+        // 如果有会话且在登录页，重定向到仪表板
+        if (session?.user && (window.location.pathname === '/sign-in' || window.location.pathname === '/')) {
+          router.push('/dashboard')
+        }
       } catch (error) {
         console.error('Error getting session:', error)
       } finally {
@@ -39,14 +46,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('Auth state changed:', event, session?.user?.email)
 
       // 只在用户状态实际变化时更新，避免不必要的重渲染
-      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
         setUser(session?.user ?? null)
         setLoading(false)
+
+        if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+          const currentPath = window.location.pathname
+          if (currentPath === '/sign-in' || currentPath === '/') {
+            router.push('/dashboard')
+          }
+        } else if (event === 'SIGNED_OUT') {
+          router.push('/sign-in')
+        }
       }
     })
 
     return () => subscription.unsubscribe()
-  }, [])
+  }, [router])
 
   const signOut = async () => {
     try {
