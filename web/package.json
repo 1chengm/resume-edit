@@ -28,7 +28,6 @@
     "clsx": "^2.1.1",
     "lucide-react": "^0.554.0",
     "next": "16.0.3",
-    "puppeteer": "^24.30.0",
     "puppeteer-core": "^24.31.0",
     "react": "19.2.0",
     "react-dom": "19.2.0",
@@ -38,6 +37,7 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
+    "puppeteer": "^24.30.0",
     "@playwright/test": "^1.48.2",
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^6.9.1",

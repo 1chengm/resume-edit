@@ -4,21 +4,35 @@ import chromium from '@sparticuz/chromium-min';
 export async function getBrowser() {
     let browser;
     if (process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production') {
-        chromium.setGraphicsMode = false;
-        browser = await puppeteer.launch({
-            args: chromium.args,
-            defaultViewport: chromium.defaultViewport,
-            executablePath: await chromium.executablePath(
+        try {
+            chromium.setGraphicsMode = false;
+            const executablePath = await chromium.executablePath(
                 "https://github.com/Sparticuz/chromium/releases/download/v131.0.1/chromium-v131.0.1-pack.tar"
-            ),
-            headless: chromium.headless,
-        });
+            );
+            console.log('Chromium executable path:', executablePath);
+
+            browser = await puppeteer.launch({
+                args: [...chromium.args, '--hide-scrollbars', '--disable-web-security'],
+                defaultViewport: chromium.defaultViewport,
+                executablePath,
+                headless: chromium.headless,
+                ignoreHTTPSErrors: true,
+            });
+        } catch (error) {
+            console.error('Failed to launch browser in production:', error);
+            throw error;
+        }
     } else {
-        const puppeteerLocal = await import('puppeteer');
-        browser = await puppeteerLocal.default.launch({
-            headless: true,
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
-        });
+        try {
+            const puppeteerLocal = await import('puppeteer');
+            browser = await puppeteerLocal.default.launch({
+                headless: true,
+                args: ['--no-sandbox', '--disable-setuid-sandbox']
+            });
+        } catch (error) {
+            console.error('Failed to launch browser locally:', error);
+            throw error;
+        }
     }
     return browser;
 }
