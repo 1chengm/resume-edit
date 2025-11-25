@@ -7,7 +7,7 @@ export async function getBrowser() {
         try {
             chromium.setGraphicsMode = false;
             const executablePath = await chromium.executablePath(
-                "https://github.com/Sparticuz/chromium/releases/download/v131.0.1/chromium-v131.0.1-pack.tar"
+                "https://github.com/Sparticuz/chromium/releases/download/v126.0.0/chromium-v126.0.0-pack.tar"
             );
             console.log('Chromium executable path:', executablePath);
 
