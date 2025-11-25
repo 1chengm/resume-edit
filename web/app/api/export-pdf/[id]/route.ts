@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getBrowser } from '@/src/lib/puppeteer'
-import { createSupabaseAdminClient } from '@/src/lib/supabaseAdmin'
+import { createSupabaseAdminClient } from '@/src/lib/supabase/admin'
 
 export async function GET(req: NextRequest) {
   const urlParts = req.nextUrl.pathname.split('/')

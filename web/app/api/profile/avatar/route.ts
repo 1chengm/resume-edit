@@ -1,6 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server'
 import { authenticateRequest } from '@/src/lib/api-auth'
-import { createAuthenticatedClient } from '@/src/lib/api-client'
+import { createClient } from '@/lib/supabase/server'
 
 export async function POST(req: NextRequest) {
   // 设置适当的响应头
@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    const supabase = createAuthenticatedClient(req)
+    const supabase = await createClient()
 
     const form = await req.formData().catch(() => null)
     if (!form) {

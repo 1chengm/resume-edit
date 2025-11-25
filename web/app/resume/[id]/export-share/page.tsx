@@ -1,7 +1,7 @@
 'use client'
 import { useRef, useState, useEffect } from 'react'
 import { authenticatedFetch } from '@/src/lib/authenticatedFetch'
-import { getSupabaseClient } from '@/src/lib/supabaseClient'
+import { supabase } from '@/lib/supabase/client'
 import { Copy, ExternalLink, X } from 'lucide-react'
 
 export default function ExportSharePage() {
@@ -143,7 +143,6 @@ export default function ExportSharePage() {
       const blob = await generateResumePDFBlobFromData(resumeContent, resumeMetadata)
 
       // 上传到 Supabase
-      const supabase = getSupabaseClient()
       const { data: { user } } = await supabase.auth.getUser()
       const path = `${(user?.id || 'anonymous')}/${id}.pdf`
 

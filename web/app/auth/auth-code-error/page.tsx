@@ -1,12 +1,12 @@
 'use client'
 import React, { Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { getSupabaseClient } from '@/src/lib/supabaseClient'
+import { supabase } from '@/lib/supabase/client'
 
 function AuthCodeErrorContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const supabase = getSupabaseClient()
+
 
   const error = searchParams.get('error')
   const details = searchParams.get('details')

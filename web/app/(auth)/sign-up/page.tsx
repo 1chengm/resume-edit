@@ -1,5 +1,5 @@
 'use client'
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from '@/lib/supabase/client'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -9,12 +9,6 @@ import { Input } from "@/components/ui/input"
 import { FileText, Loader2 } from "lucide-react"
 import Link from "next/link"
 
-function getClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url || !key) return null
-  return createClient(url, key)
-}
 
 const signUpSchema = z.object({
   email: z.string().min(1, { message: 'Email is required' }).email('Invalid email address'),
@@ -39,10 +33,7 @@ export default function SignUpPage() {
     setMessage('')
 
     try {
-      const client = getClient()
-      if (!client) throw new Error('Missing Supabase configuration')
-
-      const { error, data } = await client.auth.signUp({
+      const { error, data } = await supabase.auth.signUp({
         email: values.email,
         password: values.password
       })
@@ -56,6 +47,7 @@ export default function SignUpPage() {
       setLoading(false)
     }
   }
+
 
   return (
     <div className="w-full min-h-screen grid lg:grid-cols-2">

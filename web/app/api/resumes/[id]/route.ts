@@ -1,6 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server'
 import { authenticateRequest } from '@/lib/api-auth'
-import { createAuthenticatedClient } from '@/lib/api-client'
+import { createClient } from '@/lib/supabase/server'
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { user, error: authError } = await authenticateRequest(req)
@@ -8,7 +8,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: authError || 'Unauthorized' }, { status: 401 })
   }
 
-  const supabase = createAuthenticatedClient(req)
+  const supabase = await createClient()
   const { id } = await params
 
   // 同时获取简历内容和元数据
@@ -49,7 +49,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: authError || 'Unauthorized' }, { status: 401 })
   }
 
-  const supabase = createAuthenticatedClient(req)
+  const supabase = await createClient()
   const { id } = await params
   const body = await req.json().catch(() => ({}))
   if (body.content_json) {
@@ -76,7 +76,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     return NextResponse.json({ error: authError || 'Unauthorized' }, { status: 401 })
   }
 
-  const supabase = createAuthenticatedClient(req)
+  const supabase = await createClient()
   const { id } = await params
   await supabase.from('resume_content').delete().eq('resume_id', id)
   const { error } = await supabase.from('resumes').delete().eq('id', id)

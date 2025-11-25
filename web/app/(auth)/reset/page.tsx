@@ -1,13 +1,7 @@
 'use client'
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from '@/lib/supabase/client'
 import { useState } from 'react'
 
-function getClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url || !key) return null
-  return createClient(url, key)
-}
 
 export default function ResetPage() {
   const [email, setEmail] = useState('')
@@ -19,13 +13,16 @@ export default function ResetPage() {
     setLoading(true)
     setError('')
     setMessage('')
-    const client = getClient()
-    if (!client) { setError('缺少 Supabase 配置'); setLoading(false); return }
-    const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo: typeof window !== 'undefined' ? `${location.origin}/sign-in` : undefined })
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: typeof window !== 'undefined' ? `${location.origin}/sign-in` : undefined
+    })
+
     if (error) setError(error.message)
-    else setMessage('重置邮件已发送，请检查邮箱')
+    else setMessage('重置邮件已发送,请检查邮箱')
     setLoading(false)
   }
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">

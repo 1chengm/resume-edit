@@ -1,7 +1,7 @@
 "use client"
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { getSupabaseClient } from '@/src/lib/supabaseClient'
+import { supabase } from '@/lib/supabase/client'
 import { authenticatedFetch } from '@/src/lib/authenticatedFetch'
 import { SessionCheck } from '@/components/auth/session-check'
 import { Button } from "@/components/ui/button"
@@ -42,7 +42,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (missingConfig) return
-    const supabase = getSupabaseClient()
+
       ; (async () => {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) { router.push('/sign-in'); return }

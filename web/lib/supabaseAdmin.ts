@@ -1,1 +1,1 @@
-export { createSupabaseAdminClient } from '@/src/lib/supabaseAdmin'
+export { createSupabaseAdminClient } from '@/src/lib/supabase/admin'

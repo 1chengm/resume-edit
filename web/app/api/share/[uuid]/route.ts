@@ -1,6 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { createSupabaseAdminClient } from '@/lib/supabaseAdmin'
+import { createSupabaseAdminClient } from '@/src/lib/supabase/admin'
 import { createHash } from 'crypto'
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ uuid: string }> }) {

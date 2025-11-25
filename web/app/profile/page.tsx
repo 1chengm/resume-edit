@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { getSupabaseClient } from '@/src/lib/supabaseClient'
+import { supabase } from '@/lib/supabase/client'
 import { authenticatedFetch } from '@/src/lib/authenticatedFetch'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -50,7 +50,6 @@ export default function ProfilePage() {
   async function handleSignOut() {
     setSigningOut(true)
     setSignOutError('')
-    const supabase = getSupabaseClient()
     try {
       const { error } = await supabase.auth.signOut()
       if (error) throw error
@@ -97,29 +96,28 @@ export default function ProfilePage() {
   }
 
   useEffect(() => {
-    const supabase = getSupabaseClient()
-      ; (async () => {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) { router.push('/sign-in'); return }
-        setEmail(user.email || '')
+    ; (async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { router.push('/sign-in'); return }
+      setEmail(user.email || '')
 
-        try {
-          const response = await authenticatedFetch('/api/profile')
-          if (response.ok) {
-            const data = await response.json()
-            setProfile(data)
-            setNameInput(data.display_name || '')
-          } else {
-            setProfile({})
-            setNameInput('')
-          }
-        } catch (error) {
+      try {
+        const response = await authenticatedFetch('/api/profile')
+        if (response.ok) {
+          const data = await response.json()
+          setProfile(data)
+          setNameInput(data.display_name || '')
+        } else {
           setProfile({})
           setNameInput('')
         }
+      } catch (error) {
+        setProfile({})
+        setNameInput('')
+      }
 
-        setLoading(false)
-      })()
+      setLoading(false)
+    })()
   }, [router])
 
   if (loading) return (

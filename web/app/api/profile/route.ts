@@ -1,6 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server'
 import { authenticateRequest } from '@/src/lib/api-auth'
-import { createAuthenticatedClient } from '@/src/lib/api-client'
+import { createClient } from '@/lib/supabase/server'
 
 function isDisplayNameValid(name: string) {
   if (typeof name !== 'string') return false
@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const supabase = createAuthenticatedClient(req)
+    const supabase = await createClient()
     const { data, error } = await supabase.from('profiles').select('display_name,avatar_url').eq('user_id', user.id).single()
 
     // 如果 profile 不存在，创建一个默认的
@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: authError || 'Unauthorized' }, { status: 401 })
   }
 
-  const supabase = createAuthenticatedClient(req)
+  const supabase = await createClient()
   const body = await req.json().catch(() => ({}))
   const display_name = (body.display_name || '').trim()
   if (!isDisplayNameValid(display_name)) return NextResponse.json({ error: 'Invalid display name' }, { status: 400 })
