@@ -66,12 +66,12 @@ Node 要求：`>= 20.9.0`
 
 前端获取客户端与认证请求：
 
-```ts
-import { getSupabaseClient } from '@/lib/supabaseClient'
+```typescript
+import { supabase } from '@/lib/supabase/client'
 import { authenticatedFetch } from '@/lib/authenticatedFetch'
 
-const supabase = getSupabaseClient()
-const res = await authenticatedFetch('/api/resumes', { method: 'GET' })
+// supabase client is a singleton, ready to use
+const response = await authenticatedFetch('/api/resumes'), { method: 'GET' })
 ```
 
 API 路由 Bearer 认证：

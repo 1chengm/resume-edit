@@ -6,18 +6,18 @@ import { sanitizeResume } from '@/lib/sanitize'
 import { ResumeAnalysisSchema } from '@/types/ai'
 import { openai } from '@ai-sdk/openai'
 import { deepseek } from '@ai-sdk/deepseek'
-import { createClient } from '@supabase/supabase-js'
-import { authenticateRequest } from '@/lib/api-auth'
+import { createClient } from '@/lib/supabase/server'
 import crypto from 'crypto'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
 export async function POST(req: NextRequest) {
   try {
-    const { user, error: authError } = await authenticateRequest(req)
+    // 使用统一的服务端客户端
+    const supabase = await createClient()
+
+    // 获取当前用户
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: authError || 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const body = await req.json()
@@ -29,10 +29,6 @@ export async function POST(req: NextRequest) {
 
     // Verify ownership
     if (resumeId) {
-      const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-        global: { headers: { Authorization: req.headers.get('authorization') || '' } }
-      })
-
       const { data: resume, error: ownershipError } = await supabase
         .from('resumes')
         .select('id')
@@ -50,10 +46,6 @@ export async function POST(req: NextRequest) {
 
     // Check for existing analysis
     if (resumeId && !forceReanalyze) {
-      const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-        global: { headers: { Authorization: req.headers.get('authorization') || '' } }
-      })
-
       const { data: existingAnalysis, error: fetchError } = await supabase
         .from('ai_analysis_history')
         .select('output_json, created_at, model')
@@ -133,9 +125,6 @@ export async function POST(req: NextRequest) {
 
     // Save to database
     if (body.resumeId) {
-      const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-        global: { headers: { Authorization: req.headers.get('authorization') || '' } }
-      })
       await supabase.from('ai_analysis_history').insert({
         resume_id: body.resumeId,
         type: 'resume',

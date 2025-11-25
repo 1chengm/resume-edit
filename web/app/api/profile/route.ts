@@ -1,5 +1,4 @@
 import { NextResponse, NextRequest } from 'next/server'
-import { authenticateRequest } from '@/src/lib/api-auth'
 import { createClient } from '@/lib/supabase/server'
 
 function isDisplayNameValid(name: string) {
@@ -16,9 +15,10 @@ export async function GET(req: NextRequest) {
     'Accept': 'application/json'
   })
 
-  const { user, error: authError } = await authenticateRequest(req)
+  const supabase = await createClient()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {
-    return NextResponse.json({ error: authError || 'Unauthorized' }, {
+    return NextResponse.json({ error: 'Unauthorized' }, {
       status: 401,
       headers
     })
@@ -70,12 +70,12 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { user, error: authError } = await authenticateRequest(req)
+  const supabase = await createClient()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {
-    return NextResponse.json({ error: authError || 'Unauthorized' }, { status: 401 })
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const supabase = await createClient()
   const body = await req.json().catch(() => ({}))
   const display_name = (body.display_name || '').trim()
   if (!isDisplayNameValid(display_name)) return NextResponse.json({ error: 'Invalid display name' }, { status: 400 })

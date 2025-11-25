@@ -1,1 +1,0 @@
-export { authenticateRequest } from '@/src/lib/api-auth'

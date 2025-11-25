@@ -1,16 +1,15 @@
 import { NextResponse, NextRequest } from 'next/server'
 import { randomUUID, createHash } from 'crypto'
-import { createClient } from '@supabase/supabase-js'
-import { authenticateRequest } from '@/lib/api-auth'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+import { createClient } from '@/lib/supabase/server'
 
 export async function POST(req: NextRequest) {
-  // 首先进行认证检查
-  const { user, error: authError } = await authenticateRequest(req)
+  // 使用统一的服务端客户端
+  const supabase = await createClient()
+
+  // 获取当前用户
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {
-    return NextResponse.json({ error: authError || 'Unauthorized' }, { status: 401 })
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const body = await req.json().catch(() => ({}))
@@ -19,11 +18,6 @@ export async function POST(req: NextRequest) {
   const password = body.password as string | undefined
   const uuid = randomUUID()
   if (!resume_id) return NextResponse.json({ error: 'Missing resume_id' }, { status: 400 })
-
-  // 使用简单客户端
-  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-    global: { headers: { Authorization: req.headers.get('authorization') || '' } }
-  })
 
   const payload: { share_uuid: string; share_permission: string; share_password_hash?: string } = {
     share_uuid: uuid,
