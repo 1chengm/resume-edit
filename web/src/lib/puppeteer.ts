@@ -16,7 +16,6 @@ export async function getBrowser() {
                 defaultViewport: chromium.defaultViewport,
                 executablePath,
                 headless: chromium.headless,
-                ignoreHTTPSErrors: true,
             });
         } catch (error) {
             console.error('Failed to launch browser in production:', error);
