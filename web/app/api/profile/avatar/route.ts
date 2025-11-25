@@ -17,8 +17,6 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    const supabase = await createClient()
-
     const form = await req.formData().catch(() => null)
     if (!form) {
       return NextResponse.json({ error: 'Invalid form data' }, {

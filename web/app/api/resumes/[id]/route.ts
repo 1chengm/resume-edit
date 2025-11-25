@@ -49,7 +49,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const supabase = await createClient()
   const { id } = await params
   const body = await req.json().catch(() => ({}))
   if (body.content_json) {
@@ -77,7 +76,6 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const supabase = await createClient()
   const { id } = await params
   await supabase.from('resume_content').delete().eq('resume_id', id)
   const { error } = await supabase.from('resumes').delete().eq('id', id)
