@@ -1,14 +1,12 @@
 import puppeteer from 'puppeteer-core';
-import chromium from '@sparticuz/chromium-min';
+import chromium from '@sparticuz/chromium';
 
 export async function getBrowser() {
     let browser;
     if (process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production') {
         try {
             chromium.setGraphicsMode = false;
-            const executablePath = await chromium.executablePath(
-                "https://github.com/Sparticuz/chromium/releases/download/v126.0.0/chromium-v126.0.0-pack.tar"
-            );
+            const executablePath = await chromium.executablePath();
             console.log('Chromium executable path:', executablePath);
 
             browser = await puppeteer.launch({

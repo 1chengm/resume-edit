@@ -123,7 +123,7 @@ export default function ResumeEditPage() {
       alert('Missing Resume ID')
       return
     }
-    window.open(`/api/export-pdf/${id}`, '_blank');
+    window.print();
 
     try {
       await authenticatedFetch('/api/stats', {
@@ -145,7 +145,7 @@ export default function ResumeEditPage() {
   return (
     <div className="flex flex-col h-screen bg-muted/10">
       {/* Header */}
-      <header className="h-16 border-b bg-background flex items-center justify-between px-4 lg:px-6 sticky top-0 z-20 shadow-sm">
+      <header className="h-16 border-b bg-background flex items-center justify-between px-4 lg:px-6 sticky top-0 z-20 shadow-sm no-print">
         <div className="flex items-center gap-4">
           <Link href="/dashboard">
             <Button variant="ghost" size="icon" className="rounded-full">
@@ -208,7 +208,7 @@ export default function ResumeEditPage() {
       {/* Main Content */}
       <main className="flex-grow flex overflow-hidden">
         {/* Editor Panel */}
-        <section className="w-full lg:w-1/2 xl:w-2/5 bg-background border-r overflow-y-auto p-6 space-y-6">
+        <section className="w-full lg:w-1/2 xl:w-2/5 bg-background border-r overflow-y-auto p-6 space-y-6 no-print">
 
           {/* Personal Info */}
           <div className="space-y-4">
@@ -453,8 +453,8 @@ export default function ResumeEditPage() {
         </section>
 
         {/* Preview Panel */}
-        <section className="hidden lg:flex flex-1 bg-muted/30 p-8 items-start justify-center overflow-y-auto relative">
-          <div className="fixed bottom-8 right-8 flex flex-col gap-2 z-30">
+        <section className="hidden lg:flex flex-1 bg-muted/30 p-8 items-start justify-center overflow-y-auto relative print-visible">
+          <div className="fixed bottom-8 right-8 flex flex-col gap-2 z-30 no-print">
             <Button variant="secondary" size="icon" onClick={() => setScale(prev => Math.min(1.5, +(prev + 0.1).toFixed(2)))} title="Zoom In">
               <ZoomIn className="h-4 w-4" />
             </Button>
@@ -468,7 +468,7 @@ export default function ResumeEditPage() {
 
           <div
             ref={previewRef}
-            className="bg-white shadow-2xl transition-transform duration-200 origin-top"
+            className="bg-white shadow-2xl transition-transform duration-200 origin-top resume-print"
             style={{
               width: '210mm',
               minHeight: '297mm',
@@ -589,7 +589,7 @@ export default function ResumeEditPage() {
       </main>
 
       {shareUrl && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-background border shadow-lg rounded-lg p-4 flex items-center gap-4 animate-in slide-in-from-bottom-5 min-w-[500px]">
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-background border shadow-lg rounded-lg p-4 flex items-center gap-4 animate-in slide-in-from-bottom-5 min-w-[500px] no-print">
           <div className="flex items-center gap-3 flex-1">
             <div className="text-sm font-medium whitespace-nowrap">Share Link:</div>
             <Input value={shareUrl} readOnly className="h-9 text-sm" onClick={e => e.currentTarget.select()} />
