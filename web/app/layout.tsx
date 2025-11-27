@@ -10,7 +10,10 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "个人简历制作工具",
-  description: "快速创建、编辑、分析并导出你的中文简历"
+  description: "快速创建、编辑、分析并导出你的中文简历",
+  icons: {
+    icon: "/favicon.png"
+  }
 }
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

@@ -12,7 +12,6 @@ import {
   FileText,
   Plus,
   Search,
-  MoreHorizontal,
   Edit,
   Eye,
   Sparkles,
@@ -23,7 +22,8 @@ import {
   User,
   Clock,
   Filter,
-  SortAsc
+  SortAsc,
+  Trash2
 } from "lucide-react"
 import Link from "next/link"
 
@@ -33,6 +33,8 @@ export default function DashboardPage() {
   const [query, setQuery] = useState('')
   const [chooserOpen, setChooserOpen] = useState(false)
   const [creating, setCreating] = useState(false)
+  const [resumeToDelete, setResumeToDelete] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   const missingConfig = !url || !key
@@ -100,6 +102,41 @@ export default function DashboardPage() {
       router.push(`/resume/${data.id}/edit`)
     } finally {
       setCreating(false)
+    }
+  }
+
+  async function handleDeleteClick(resumeId: string, resumeTitle: string, e: React.MouseEvent) {
+    e.stopPropagation()
+    e.preventDefault()
+
+    // 使用浏览器原生confirm对话框
+    const confirmDelete = window.confirm(`确定要删除简历 "${resumeTitle}" 吗？\n\n此操作无法撤销，删除后所有相关数据将被永久删除。`)
+
+    if (!confirmDelete) return
+
+    setResumeToDelete(resumeId)
+    setDeleting(true)
+
+    try {
+      const res = await authenticatedFetch(`/api/resumes/${resumeId}`, {
+        method: 'DELETE'
+      })
+
+      if (!res.ok) {
+        const error = await res.json()
+        alert(error.error || '删除简历失败')
+        return
+      }
+
+      // 从列表中移除已删除的简历
+      setItems(prev => prev.filter(item => item.id !== resumeId))
+      alert('简历删除成功！')
+    } catch (error) {
+      console.error('Delete error:', error)
+      alert('删除简历时出错，请重试')
+    } finally {
+      setDeleting(false)
+      setResumeToDelete(null)
     }
   }
 
@@ -227,9 +264,6 @@ export default function DashboardPage() {
                         <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-2">
                           <FileText className="h-6 w-6" />
                         </div>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
                       </div>
                       <CardTitle className="text-lg">{item.title}</CardTitle>
                       <p className="text-xs text-muted-foreground">Updated {item.updated_text}</p>
@@ -258,6 +292,20 @@ export default function DashboardPage() {
                             <Target className="h-4 w-4" />
                           </Button>
                         </Link>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50"
+                          title="Delete Resume"
+                          onClick={(e) => handleDeleteClick(item.id, item.title, e)}
+                          disabled={deleting && resumeToDelete === item.id}
+                        >
+                          {deleting && resumeToDelete === item.id ? (
+                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </Button>
                       </div>
                     </CardFooter>
                   </Card>

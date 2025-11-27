@@ -33,18 +33,29 @@ type AnalysisData = {
 }
 
 // Helper function to generate detailed analysis from AI data
-function generateDetailedAnalysis(aiData: any) {
+function generateDetailedAnalysis(aiData: any, resumeContent?: any) {
   const suggestions = []
-  
+
   // Content completeness suggestions
   if (aiData.content_completeness?.recommendations?.length > 0) {
     suggestions.push({
       title: "内容完整性需要改进",
-      suggestions: aiData.content_completeness.recommendations.map((rec: string, index: number) => ({
-        description: rec,
-        before: "当前内容",
-        after: "建议改进"
-      }))
+      suggestions: aiData.content_completeness.recommendations.map((rec: string, index: number) => {
+        // 从resumeContent中提取相关文本作为before
+        let beforeText = "当前简历内容"
+        if (resumeContent) {
+          // 尝试根据建议内容提取相关文本
+          const jsonStr = JSON.stringify(resumeContent, null, 2)
+          // 提取简短摘要作为示例
+          beforeText = jsonStr.substring(0, 150) + (jsonStr.length > 150 ? "..." : "")
+        }
+
+        return {
+          description: rec,
+          before: beforeText,
+          after: `改进方向：${rec}`
+        }
+      })
     })
   }
 
@@ -54,21 +65,42 @@ function generateDetailedAnalysis(aiData: any) {
       title: "简历结构可以优化",
       suggestions: aiData.structure.recommendations.map((rec: string, index: number) => ({
         description: rec,
-        before: "当前结构",
-        after: "建议结构"
+        before: "当前简历结构",
+        after: `建议：${rec}`
       }))
     })
   }
 
-  // Expression examples
+  // Expression examples - 这里AI应该返回before/after对，但我们目前只有after
   if (aiData.expression?.rewrite_examples?.length > 0) {
     suggestions.push({
       title: "语言表达需要提升",
-      suggestions: aiData.expression.rewrite_examples.slice(0, 3).map((example: string, index: number) => ({
-        description: "表达可以更专业和具体",
-        before: "原表达",
-        after: example
-      }))
+      suggestions: aiData.expression.rewrite_examples.slice(0, 3).map((example: string, index: number) => {
+        // 尝试从example中提取before/after
+        // 假设格式为"将'XXX'改为'YYY'"或"XXX -> YYY"
+        let before = "原表达"
+        let after = example
+
+        // 解析常见的改进建议格式
+        const changeMatch = example.match(/将['"](.+?)['"]改为['"](.+?)['"]/)
+        if (changeMatch) {
+          before = changeMatch[1]
+          after = changeMatch[2]
+        } else {
+          // 解析 "原表达 -> 新表达" 格式
+          const arrowMatch = example.match(/(.+?)\s*->\s*(.+)/)
+          if (arrowMatch) {
+            before = arrowMatch[1].trim()
+            after = arrowMatch[2].trim()
+          }
+        }
+
+        return {
+          description: "表达可以更专业和具体",
+          before: before,
+          after: after
+        }
+      })
     })
   }
 
@@ -78,8 +110,8 @@ function generateDetailedAnalysis(aiData: any) {
       title: "简历整体表现良好",
       suggestions: [{
         description: "简历内容完整，结构清晰，表达准确",
-        before: "当前简历",
-        after: "继续保持"
+        before: "当前简历内容",
+        after: "继续保持此水平"
       }]
     })
   }
@@ -169,7 +201,7 @@ export default function AnalysisClient({ resumeId }: AnalysisClientProps) {
       try {
         setLoading(true)
         setError(null)
-        
+
         // Fetch profile data first
         const profileRes = await authenticatedFetch('/api/profile')
         if (profileRes.ok) {
@@ -179,27 +211,27 @@ export default function AnalysisClient({ resumeId }: AnalysisClientProps) {
             avatar_url: profileData.avatar_url
           })
         }
-        
+
         // Fetch resume data
         const resumeRes = await authenticatedFetch(`/api/resumes/${resumeId}`)
-        
+
         if (resumeRes.status === 401) {
           // Handle authentication error specifically
           setError('请先登录以查看简历分析')
           setLoading(false)
           return
         }
-        
+
         if (!resumeRes.ok) {
           throw new Error(`Failed to fetch resume data: ${resumeRes.status}`)
         }
-        
+
         const resumeData = await resumeRes.json()
-        
+
         if (!resumeData) {
           throw new Error('No resume data found')
         }
-        
+
         setResume({ id: resumeData.id, title: resumeData.title })
         setResumeContent(resumeData.content_json || null)
 
@@ -208,18 +240,18 @@ export default function AnalysisClient({ resumeId }: AnalysisClientProps) {
           try {
             const analysisRes = await authenticatedFetch("/api/ai/analyze", {
               method: "POST",
-              body: JSON.stringify({ 
-                resumeContent: resumeData.content_json, 
-                resumeId: resumeData.id 
+              body: JSON.stringify({
+                resumeContent: resumeData.content_json,
+                resumeId: resumeData.id
               })
             })
-            
+
             if (analysisRes.ok) {
               const aiData = await analysisRes.json()
-              
+
               // Generate detailed analysis from AI recommendations
-              const detailedAnalysis = generateDetailedAnalysis(aiData)
-              
+              const detailedAnalysis = generateDetailedAnalysis(aiData, resumeData.content_json)
+
               const mappedAnalysis: AnalysisData = {
                 overallScore: Math.round(aiData.overall_score || 0),
                 scoreBreakdown: [
@@ -228,15 +260,15 @@ export default function AnalysisClient({ resumeId }: AnalysisClientProps) {
                   { name: "语言与表达", score: Math.round(aiData.scores?.expression || 0) }
                 ],
                 detailedAnalysis: detailedAnalysis,
-                contentRecommendations: { 
-                  missing_sections: aiData.content_completeness?.missing_sections || [], 
-                  recommendations: aiData.content_completeness?.recommendations || [] 
+                contentRecommendations: {
+                  missing_sections: aiData.content_completeness?.missing_sections || [],
+                  recommendations: aiData.content_completeness?.recommendations || []
                 },
                 structureRecommendations: aiData.structure?.recommendations || [],
                 expressionExamples: aiData.expression?.rewrite_examples || []
               }
               setAnalysis(mappedAnalysis)
-              
+
               // 检查是否为缓存结果（如果返回的数据中包含缓存标识）
               if (aiData.is_cached === true) {
                 setIsCached(true)
@@ -270,7 +302,7 @@ export default function AnalysisClient({ resumeId }: AnalysisClientProps) {
           }
           setAnalysis(defaultAnalysis)
         }
-        
+
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to load data'
         setError(errorMessage)
@@ -299,7 +331,7 @@ export default function AnalysisClient({ resumeId }: AnalysisClientProps) {
 
     try {
       const reportHtml = el.outerHTML;
-      
+
       // We need to wrap the report section in a full HTML document with styles
       // to ensure it renders correctly in the headless browser.
       const fullHtml = `
@@ -349,35 +381,49 @@ export default function AnalysisClient({ resumeId }: AnalysisClientProps) {
     }
   }
 
+  function printResume() {
+    if (!resume?.id) return
+
+    try {
+      window.print()
+
+      // 记录统计
+      authenticatedFetch("/api/stats", { method: "POST", body: JSON.stringify({ type: "resume_pdf_export", resume_id: resume.id }) }).catch(console.error)
+    } catch (error) {
+      console.error("PDF export failed:", error)
+      alert("导出简历PDF失败，请重试")
+    }
+  }
+
   async function reAnalyze() {
     if (!resumeContent || !resume?.id) {
       setError('简历内容为空，无法进行分析')
       return
     }
-    
+
     setIsAnalyzing(true)
     setError(null)
-    
+
     try {
       const res = await authenticatedFetch("/api/ai/analyze", {
         method: "POST",
-        body: JSON.stringify({ 
-          resumeContent, 
+        body: JSON.stringify({
+          resumeContent,
           resumeId: resume.id,
           forceReanalyze: true // 告诉后端这是用户主动重新分析
         })
       })
-      
+
       const data = await res.json()
-      
-      if (!res.ok) { 
+
+      if (!res.ok) {
         setError(data.error || 'AI分析失败，请稍后再试')
-        return 
+        return
       }
-      
+
       // Generate detailed analysis from AI recommendations
-      const detailedAnalysis = generateDetailedAnalysis(data)
-      
+      const detailedAnalysis = generateDetailedAnalysis(data, resumeContent)
+
       const mapped: AnalysisData = {
         overallScore: Math.round(data.overall_score || 0),
         scoreBreakdown: [
@@ -386,16 +432,16 @@ export default function AnalysisClient({ resumeId }: AnalysisClientProps) {
           { name: "语言与表达", score: Math.round(data.scores?.expression || 0) }
         ],
         detailedAnalysis: detailedAnalysis,
-        contentRecommendations: { 
-          missing_sections: data.content_completeness?.missing_sections || [], 
-          recommendations: data.content_completeness?.recommendations || [] 
+        contentRecommendations: {
+          missing_sections: data.content_completeness?.missing_sections || [],
+          recommendations: data.content_completeness?.recommendations || []
         },
         structureRecommendations: data.structure?.recommendations || [],
         expressionExamples: data.expression?.rewrite_examples || []
       }
-      
+
       setAnalysis(mapped)
-      
+
     } catch (err) {
       setError('网络错误，请检查连接后重试')
       console.error('Re-analysis error:', err)
@@ -417,7 +463,7 @@ export default function AnalysisClient({ resumeId }: AnalysisClientProps) {
 
   if (error) {
     const isAuthError = error.includes('登录') || error.includes('authentication')
-    
+
     return (
       <div className="flex h-screen items-center justify-center bg-muted/10">
         <Card className="w-96">
@@ -494,9 +540,9 @@ export default function AnalysisClient({ resumeId }: AnalysisClientProps) {
           <Button variant="ghost" size="icon" asChild>
             <Link href="/profile" title="个人中心">
               {profile?.avatar_url ? (
-                <img 
-                  src={profile.avatar_url} 
-                  alt="头像" 
+                <img
+                  src={profile.avatar_url}
+                  alt="头像"
                   className="h-5 w-5 rounded-full object-cover"
                 />
               ) : (
@@ -523,16 +569,16 @@ export default function AnalysisClient({ resumeId }: AnalysisClientProps) {
             <p className="text-muted-foreground">以下是简历表现与 AI 优化建议。</p>
           </div>
           <div className="flex items-center gap-2">
-            <Button 
-              variant="outline" 
-              onClick={downloadPDF}
+            <Button
+              variant="outline"
+              onClick={printResume}
               disabled={!resumeContent}
-              title={!resumeContent ? "简历内容为空，无法生成报告" : "下载分析报告"}
+              title={!resumeContent ? "简历内容为空，无法导出PDF" : "使用浏览器打印功能导出简历为PDF"}
             >
               <Download className="h-4 w-4 mr-2" />
-              下载报告
+              简历PDF导出
             </Button>
-            <Button 
+            <Button
               variant="secondary"
               onClick={reAnalyze}
               disabled={!resumeContent || loading || isAnalyzing}
