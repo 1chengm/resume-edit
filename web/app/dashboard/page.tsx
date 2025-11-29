@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
 import { authenticatedFetch } from '@/src/lib/authenticatedFetch'
-import { SessionCheck } from '@/components/auth/session-check'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -155,7 +154,6 @@ export default function DashboardPage() {
 
   return (
     <>
-      <SessionCheck />
       <div className="flex min-h-screen bg-muted/10">
         {/* Sidebar */}
         <aside className="w-64 bg-background border-r hidden md:flex flex-col">

@@ -22,7 +22,7 @@ export default function Home() {
             <Link href="/sign-in">
               <Button variant="ghost" size="sm">Log in</Button>
             </Link>
-            <Link href="/dashboard">
+            <Link href="/sign-in">
               <Button size="sm">Get Started</Button>
             </Link>
           </div>
@@ -48,7 +48,7 @@ export default function Home() {
               Get real-time feedback, optimize for job descriptions, and land your dream job.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href="/dashboard">
+              <Link href="/sign-in">
                 <Button size="lg" className="h-12 px-8 text-base">
                   Create My Resume
                 </Button>
@@ -129,7 +129,7 @@ export default function Home() {
                 <p className="text-primary-foreground/80 mb-8 text-lg">
                   Join thousands of professionals who have successfully landed jobs using ResumeCraft.
                 </p>
-                <Link href="/dashboard">
+                <Link href="/sign-in">
                   <Button size="lg" variant="secondary" className="h-12 px-8 text-base font-semibold">
                     Get Started for Free
                   </Button>

@@ -25,11 +25,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { data: { session } } = await supabase.auth.getSession()
         console.log('Initial session:', session?.user?.email)
         setUser(session?.user ?? null)
-
-        // 如果有会话且在登录页，重定向到仪表板
-        if (session?.user && (window.location.pathname === '/sign-in' || window.location.pathname === '/')) {
-          router.push('/dashboard')
-        }
       } catch (error) {
         console.error('Error getting session:', error)
       } finally {
@@ -50,12 +45,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null)
         setLoading(false)
 
-        if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
-          const currentPath = window.location.pathname
-          if (currentPath === '/sign-in' || currentPath === '/') {
-            router.push('/dashboard')
-          }
-        } else if (event === 'SIGNED_OUT') {
+        // Only handle sign out navigation - middleware handles protected route access
+        if (event === 'SIGNED_OUT') {
           router.push('/sign-in')
         }
       }
