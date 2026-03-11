@@ -41,8 +41,8 @@ export default function SignUpPage() {
       if (error) throw error
 
       setMessage(data.user ? 'Registration successful! Please check your email.' : 'Registration successful, please verify your email.')
-    } catch (error: any) {
-      setError(error.message || 'Registration failed')
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'Registration failed')
     } finally {
       setLoading(false)
     }

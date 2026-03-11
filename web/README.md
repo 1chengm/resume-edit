@@ -7,7 +7,7 @@
 - **登录与鉴权**：Supabase Auth（邮箱密码 + GitHub OAuth）
 - **简历编辑器**：结构化表单 + 预览区（支持 Markdown 轻渲染）
 - **AI 能力**：简历分析与 JD 匹配，采用 `openai` 或 `deepseek`
-- **PDF 导出**：Puppeteer 服务端渲染，支持 Vercel Serverless
+- **PDF 导出**：浏览器原生打印（`window.print()`）
 - **分享与统计**：生成分享链接，访问统计入库
 
 ## 技术栈
@@ -18,7 +18,7 @@
 | UI | shadcn/ui 风格组件、Lucide 图标 |
 | 后端 | Supabase（Postgres + Storage + Auth） |
 | AI | Vercel AI SDK（OpenAI / DeepSeek） |
-| PDF | Puppeteer + @sparticuz/chromium |
+| PDF | Browser Print API（`window.print`） |
 | 测试 | Playwright (E2E)、Vitest (Unit) |
 
 ## 目录结构
@@ -33,11 +33,9 @@ web/
 │   ├── resume/[id]/        # 简历编辑、分析、导出
 │   └── s/[uuid]/           # 公开分享页面
 ├── components/             # React 组件
-│   ├── auth/               # 认证相关组件
-│   ├── ui/                 # 基础 UI 组件
-│   └── auth-provider.tsx   # 全局认证状态管理
-├── lib/                    # 兼容导出层（re-exports）
-├── src/lib/                # 核心工具库
+│   └── ui/                 # 基础 UI 组件
+├── lib/                    # 核心工具库（统一入口）
+├── src/lib/                # 兼容封装层（转调 lib）
 │   ├── supabase/           # Supabase 客户端（client/server/admin）
 │   └── ...                 # 其他工具
 ├── types/                  # TypeScript 类型定义
@@ -102,7 +100,7 @@ exchangeCodeForSession(code) 交换 Session
 通过 `middleware.ts` 实现服务端路由保护：
 
 - **受保护路由**：`/dashboard`、`/resume/*`、`/profile`
-- **公开路由**：`/`、`/auth/*`、`/s/*`、`/api/*`
+- **公开路由**：`/`、`/auth/*`、`/s/*`
 - 未登录访问受保护路由 → 重定向到 `/sign-in`
 - 已登录访问登录页 → 重定向到 `/dashboard`
 
@@ -166,7 +164,7 @@ export async function GET(req: Request) {
 
 ### 注意事项
 
-- PDF 导出使用 `@sparticuz/chromium`，兼容 Vercel Serverless
+- PDF 导出基于浏览器打印能力，建议在目标浏览器中验证打印样式
 - 建议启用 Vercel 的 Edge Config 加速 Supabase 连接
 
 ## 许可证

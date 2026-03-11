@@ -1,7 +1,9 @@
 import Link from "next/link"
+import { Suspense } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { FileText, Sparkles, Download, Share2, CheckCircle } from "lucide-react"
+import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { CurrentYear } from "@/components/current-year"
+import { FileText, Sparkles, Download } from "lucide-react"
 
 export default function Home() {
   return (
@@ -75,7 +77,7 @@ export default function Home() {
             <div className="text-center max-w-2xl mx-auto mb-16">
               <h2 className="text-3xl font-bold tracking-tight mb-4">Everything you need to stand out</h2>
               <p className="text-muted-foreground">
-                Our platform provides all the tools you need to create a compelling resume that gets past ATS and catches recruiters' eyes.
+                Our platform provides all the tools you need to create a compelling resume that gets past ATS and catches recruiters&apos; eyes.
               </p>
             </div>
 
@@ -170,7 +172,7 @@ export default function Home() {
             </div>
           </div>
           <div className="border-t pt-8 text-center text-sm text-muted-foreground">
-            © {new Date().getFullYear()} ResumeCraft. All rights reserved.
+            © <Suspense fallback="----"><CurrentYear /></Suspense> ResumeCraft. All rights reserved.
           </div>
         </div>
       </footer>

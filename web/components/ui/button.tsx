@@ -1,16 +1,6 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
-import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
-
-// Note: class-variance-authority needs to be installed if not present. 
-// If not, I will implement a simpler version or install it.
-// Checking package.json earlier, it wasn't there. 
-// I should probably install it or write a simpler version.
-// For now, I'll write a simpler version without cva to avoid extra installs if possible, 
-// OR I'll just install it. It's standard for shadcn.
-// Let's stick to a simpler implementation to avoid dependency hell if I can't run too many commands.
-// Actually, I can just use clsx/tailwind-merge logic manually for now to keep it robust without extra deps.
 
 export interface ButtonProps
     extends React.ButtonHTMLAttributes<HTMLButtonElement> {

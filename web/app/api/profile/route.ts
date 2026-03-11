@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { requireApiUser } from '@/lib/auth/require-user'
 
 function isDisplayNameValid(name: string) {
   if (typeof name !== 'string') return false
@@ -8,16 +8,18 @@ function isDisplayNameValid(name: string) {
   return /^[\p{L}0-9 _.-]+$/u.test(v)
 }
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   // 设置适当的响应头
   const headers = new Headers({
     'Content-Type': 'application/json',
     'Accept': 'application/json'
   })
 
-  const supabase = await createClient()
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) {
+  const { user, supabase, response } = await requireApiUser()
+  if (response) {
+    return response
+  }
+  if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, {
       status: 401,
       headers
@@ -25,7 +27,6 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const supabase = await createClient()
     const { data, error } = await supabase.from('profiles').select('display_name,avatar_url').eq('user_id', user.id).single()
 
     // 如果 profile 不存在，创建一个默认的
@@ -70,11 +71,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = await createClient()
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const { user, supabase, response } = await requireApiUser()
+  if (response) return response
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json().catch(() => ({}))
   const display_name = (body.display_name || '').trim()

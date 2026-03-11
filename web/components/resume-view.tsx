@@ -1,17 +1,15 @@
-'use client'
-
 import type { ResumeContent } from '@/types/resume'
 import { renderMarkdown } from '@/lib/markdown'
 
 interface ResumeViewProps {
     data: {
         resume?: {
-            color_theme?: string
-            template?: string
+            color_theme?: string | null
+            template?: string | null
         }
         content?: {
             content_json?: ResumeContent
-        }
+        } | null
     }
 }
 

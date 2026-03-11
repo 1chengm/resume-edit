@@ -1,22 +1,36 @@
 import { NextResponse, NextRequest } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { requireApiUser } from '@/lib/auth/require-user'
 
 export async function POST(req: NextRequest) {
-  // 使用统一的服务端客户端
-  const supabase = await createClient()
-
-  // 获取当前用户
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const { user, supabase, response } = await requireApiUser()
+  if (response) return response
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json().catch(() => ({}))
   const type = body.type
   const resume_id = body.resume_id
   if (!type || !resume_id) return NextResponse.json({ error: 'Missing type or resume_id' }, { status: 400 })
 
-  const { data } = await supabase.from('resume_stats').select('id,count').eq('resume_id', resume_id).eq('type', type).single()
+  const { data: resume, error: resumeError } = await supabase
+    .from('resumes')
+    .select('id')
+    .eq('id', resume_id)
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (resumeError) {
+    return NextResponse.json({ error: resumeError.message }, { status: 500 })
+  }
+  if (!resume) {
+    return NextResponse.json({ error: 'Resume not found' }, { status: 404 })
+  }
+
+  const { data } = await supabase
+    .from('resume_stats')
+    .select('id,count')
+    .eq('resume_id', resume_id)
+    .eq('type', type)
+    .single()
   if (!data) {
     const { error } = await supabase.from('resume_stats').insert({ resume_id, type, count: 1 })
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })

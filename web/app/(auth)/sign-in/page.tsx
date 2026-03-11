@@ -1,5 +1,5 @@
 'use client'
-import { createClient } from '@/src/lib/supabase/client'
+import { createClient } from '@/lib/supabase/client'
 import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -18,6 +18,11 @@ const signInSchema = z.object({
 
 type SignInFormValues = z.infer<typeof signInSchema>
 
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error) return error.message
+  return String(error ?? 'Unknown error')
+}
+
 export default function SignInPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -34,9 +39,13 @@ export default function SignInPage() {
   // Check if user is already logged in
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session) {
-        router.replace('/dashboard')
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session) {
+          router.replace('/dashboard')
+        }
+      } catch (err) {
+        console.error('Session check failed:', err)
       }
     }
     checkSession()
@@ -58,11 +67,14 @@ export default function SignInPage() {
         setSuccess('登录成功！正在跳转...')
         setTimeout(() => router.push('/dashboard'), 300)
       }
-    } catch (error: any) {
-      if (error.message?.includes('Invalid login credentials')) {
+    } catch (error: unknown) {
+      const message = getErrorMessage(error)
+      if (message.includes('Invalid login credentials')) {
         setError('邮箱或密码错误')
+      } else if (message.includes('fetch failed') || message.includes('Failed to fetch') || message.includes('SSL')) {
+        setError('无法连接认证服务，请检查 NEXT_PUBLIC_SUPABASE_URL 或网络/代理设置')
       } else {
-        setError(error.message || '登录失败')
+        setError(message || '登录失败')
       }
     } finally {
       setLoading(false)
@@ -90,9 +102,14 @@ export default function SignInPage() {
       // Supabase will redirect automatically on success
       console.log('GitHub auth initiated, redirecting to:', data.url)
 
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = getErrorMessage(error)
       console.error('GitHub login error:', error)
-      setError('GitHub 登录失败: ' + error.message)
+      if (message.includes('fetch failed') || message.includes('Failed to fetch') || message.includes('SSL')) {
+        setError('GitHub 登录失败：无法连接认证服务，请检查 NEXT_PUBLIC_SUPABASE_URL 或网络/代理设置')
+      } else {
+        setError('GitHub 登录失败: ' + message)
+      }
       setLoading(false)
     }
   }
@@ -178,7 +195,7 @@ export default function SignInPage() {
             )}
 
             <div className="text-center text-sm text-muted-foreground">
-              Don't have an account?{" "}
+              Don&apos;t have an account?{" "}
               <Link href="/sign-up" className="text-primary hover:underline font-medium">
                 Sign up
               </Link>

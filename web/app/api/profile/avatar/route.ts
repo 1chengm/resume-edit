@@ -1,5 +1,21 @@
 import { NextResponse, NextRequest } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { requireApiUser } from '@/lib/auth/require-user'
+
+function extractErrorDetail(err: unknown): string {
+  if (typeof err === 'object' && err !== null && 'error' in err) {
+    const detail = (err as Record<string, unknown>).error
+    if (typeof detail === 'string' && detail.trim().length > 0) return detail
+  }
+  return 'No additional details'
+}
+
+function extractStatusCode(err: unknown): string | number {
+  if (typeof err === 'object' && err !== null && 'statusCode' in err) {
+    const statusCode = (err as Record<string, unknown>).statusCode
+    if (typeof statusCode === 'string' || typeof statusCode === 'number') return statusCode
+  }
+  return 'unknown'
+}
 
 export async function POST(req: NextRequest) {
   // 设置适当的响应头
@@ -8,9 +24,11 @@ export async function POST(req: NextRequest) {
   })
 
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
+    const { user, supabase, response } = await requireApiUser()
+    if (response) {
+      return response
+    }
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, {
         status: 401,
         headers
@@ -67,12 +85,12 @@ export async function POST(req: NextRequest) {
       console.error('Avatar upload error:', upErr)
       console.error('Upload error details:', {
         message: upErr.message,
-        statusCode: (upErr as any).statusCode || 'unknown',
-        error: (upErr as any).error
+        statusCode: extractStatusCode(upErr),
+        error: extractErrorDetail(upErr)
       })
       return NextResponse.json({
         error: `Upload failed: ${upErr.message}`,
-        details: (upErr as any).error || 'No additional details'
+        details: extractErrorDetail(upErr)
       }, {
         status: 500,
         headers
@@ -114,7 +132,7 @@ export async function POST(req: NextRequest) {
           console.error('Profile insert error:', insertError)
           return NextResponse.json({
             error: `Profile creation failed: ${insertError.message}`,
-            details: (insertError as any).error || 'No additional details'
+            details: extractErrorDetail(insertError)
           }, {
             status: 500,
             headers
@@ -124,7 +142,7 @@ export async function POST(req: NextRequest) {
       } else {
         return NextResponse.json({
           error: `Profile update failed: ${updateError.message}`,
-          details: (updateError as any).error || 'No additional details'
+          details: extractErrorDetail(updateError)
         }, {
           status: 500,
           headers

@@ -1,15 +1,10 @@
 import { NextResponse, NextRequest } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { requireApiUser } from '@/lib/auth/require-user'
 
-export async function GET(req: NextRequest) {
-  // 使用统一的服务端客户端
-  const supabase = await createClient()
-
-  // 获取当前用户
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+export async function GET() {
+  const { user, supabase, response } = await requireApiUser()
+  if (response) return response
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { data, error } = await supabase.from('resumes').select('*').eq('user_id', user.id).order('updated_at', { ascending: false })
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -18,14 +13,9 @@ export async function GET(req: NextRequest) {
 
 
 export async function POST(req: NextRequest) {
-  // 使用统一的服务端客户端
-  const supabase = await createClient()
-
-  // 获取当前用户
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const { user, supabase, response } = await requireApiUser()
+  if (response) return response
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json().catch(() => ({}))
   const title = body.title || '未命名简历'

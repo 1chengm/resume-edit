@@ -1,24 +1,18 @@
 import { NextResponse, NextRequest } from 'next/server'
 import { generateObject, generateText } from 'ai'
-import { z } from 'zod'
 import { getPrompt } from '@/lib/yaml-prompts'
 import { sanitizeResume } from '@/lib/sanitize'
 import { ResumeAnalysisSchema } from '@/types/ai'
 import { openai } from '@ai-sdk/openai'
 import { deepseek } from '@ai-sdk/deepseek'
-import { createClient } from '@/lib/supabase/server'
+import { requireApiUser } from '@/lib/auth/require-user'
 import crypto from 'crypto'
 
 export async function POST(req: NextRequest) {
   try {
-    // 使用统一的服务端客户端
-    const supabase = await createClient()
-
-    // 获取当前用户
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const { user, supabase, response } = await requireApiUser()
+    if (response) return response
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await req.json()
     const resumeContent = body.resumeContent

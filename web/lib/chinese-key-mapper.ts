@@ -1,4 +1,3 @@
-import { z } from 'zod'
 import { JDMatchSchema, type JDMatch } from '@/types/ai'
 
 /**
@@ -59,6 +58,9 @@ export function mapChineseKeysToEnglish(chineseResponse: ChineseJDMatchResponse)
  * Returns a normalized response with English keys that can be validated by Zod
  */
 export function normalizeJDMatchResponse(response: unknown): JDMatch {
+  const isStringArray = (value: unknown): value is string[] =>
+    Array.isArray(value) && value.every(item => typeof item === 'string')
+
   // If response is already in English format, return as is
   if (!hasChineseKeys(response)) {
     // Validate and return
@@ -76,11 +78,20 @@ export function normalizeJDMatchResponse(response: unknown): JDMatch {
     }
     
     if (response && typeof response === 'object') {
+      const responseRecord = response as Record<string, unknown>
       return {
-        match_score: (response as any).match_score ?? fallback.match_score,
-        strengths: Array.isArray((response as any).strengths) ? (response as any).strengths : fallback.strengths,
-        gaps: Array.isArray((response as any).gaps) ? (response as any).gaps : fallback.gaps,
-        recommendations: Array.isArray((response as any).recommendations) ? (response as any).recommendations : fallback.recommendations
+        match_score: typeof responseRecord.match_score === 'number'
+          ? responseRecord.match_score
+          : fallback.match_score,
+        strengths: isStringArray(responseRecord.strengths)
+          ? responseRecord.strengths
+          : fallback.strengths,
+        gaps: isStringArray(responseRecord.gaps)
+          ? responseRecord.gaps
+          : fallback.gaps,
+        recommendations: isStringArray(responseRecord.recommendations)
+          ? responseRecord.recommendations
+          : fallback.recommendations
       }
     }
     

@@ -1,7 +1,7 @@
 "use client"
-import { useEffect, useMemo, useRef, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import type { ResumeContent } from "@/types/resume"
 import { authenticatedFetch } from "@/lib/authenticatedFetch"
 import { Button } from "@/components/ui/button"
@@ -32,15 +32,38 @@ type AnalysisData = {
   expressionExamples?: string[]
 }
 
+type AIAnalysisInput = {
+  content_completeness?: {
+    recommendations?: string[]
+    missing_sections?: string[]
+  }
+  structure?: {
+    recommendations?: string[]
+  }
+  expression?: {
+    rewrite_examples?: string[]
+  }
+  overall_score?: number
+  scores?: {
+    content_completeness?: number
+    structure?: number
+    expression?: number
+  }
+  is_cached?: boolean
+}
+
 // Helper function to generate detailed analysis from AI data
-function generateDetailedAnalysis(aiData: any, resumeContent?: any) {
+function generateDetailedAnalysis(aiData: AIAnalysisInput, resumeContent?: ResumeContent | null) {
   const suggestions = []
+  const contentRecommendations = aiData.content_completeness?.recommendations ?? []
+  const structureRecommendations = aiData.structure?.recommendations ?? []
+  const rewriteExamples = aiData.expression?.rewrite_examples ?? []
 
   // Content completeness suggestions
-  if (aiData.content_completeness?.recommendations?.length > 0) {
+  if (contentRecommendations.length > 0) {
     suggestions.push({
       title: "内容完整性需要改进",
-      suggestions: aiData.content_completeness.recommendations.map((rec: string, index: number) => {
+      suggestions: contentRecommendations.map((rec: string) => {
         // 从resumeContent中提取相关文本作为before
         let beforeText = "当前简历内容"
         if (resumeContent) {
@@ -60,10 +83,10 @@ function generateDetailedAnalysis(aiData: any, resumeContent?: any) {
   }
 
   // Structure recommendations
-  if (aiData.structure?.recommendations?.length > 0) {
+  if (structureRecommendations.length > 0) {
     suggestions.push({
       title: "简历结构可以优化",
-      suggestions: aiData.structure.recommendations.map((rec: string, index: number) => ({
+      suggestions: structureRecommendations.map((rec: string) => ({
         description: rec,
         before: "当前简历结构",
         after: `建议：${rec}`
@@ -72,10 +95,10 @@ function generateDetailedAnalysis(aiData: any, resumeContent?: any) {
   }
 
   // Expression examples - 这里AI应该返回before/after对，但我们目前只有after
-  if (aiData.expression?.rewrite_examples?.length > 0) {
+  if (rewriteExamples.length > 0) {
     suggestions.push({
       title: "语言表达需要提升",
-      suggestions: aiData.expression.rewrite_examples.slice(0, 3).map((example: string, index: number) => {
+      suggestions: rewriteExamples.slice(0, 3).map((example: string) => {
         // 尝试从example中提取before/after
         // 假设格式为"将'XXX'改为'YYY'"或"XXX -> YYY"
         let before = "原表达"
@@ -183,7 +206,6 @@ interface AnalysisClientProps {
 }
 
 export default function AnalysisClient({ resumeId }: AnalysisClientProps) {
-  const router = useRouter()
   const [resume, setResume] = useState<{ id: string; title: string } | null>(null)
   const [resumeContent, setResumeContent] = useState<ResumeContent | null>(null)
   const [analysis, setAnalysis] = useState<AnalysisData | null>(null)
@@ -193,7 +215,6 @@ export default function AnalysisClient({ resumeId }: AnalysisClientProps) {
   const [profile, setProfile] = useState<{ display_name: string | null; avatar_url: string | null }>({ display_name: null, avatar_url: null })
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [isCached, setIsCached] = useState(false)
-  const sectionRef = useRef<HTMLDivElement | null>(null)
 
   // Fetch data on component mount
   useEffect(() => {
@@ -324,62 +345,6 @@ export default function AnalysisClient({ resumeId }: AnalysisClientProps) {
       return { label: "较弱", text: "text-red-600", bar: "bg-red-600", stroke: "text-red-600" }
     }
   }, [])
-
-  async function downloadPDF() {
-    const el = sectionRef.current
-    if (!el || !resume?.id) return
-
-    try {
-      const reportHtml = el.outerHTML;
-
-      // We need to wrap the report section in a full HTML document with styles
-      // to ensure it renders correctly in the headless browser.
-      const fullHtml = `
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Analysis Report</title>
-          <script src="https://cdn.tailwindcss.com"></script>
-          <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
-          <style>
-            .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-            body { background-color: #f6f7f8; }
-          </style>
-        </head>
-        <body class="p-8">
-          ${reportHtml}
-        </body>
-        </html>
-      `;
-
-      const res = await fetch("/api/export-html-as-pdf", {
-        method: "POST",
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ html: fullHtml }),
-      });
-
-      if (!res.ok) {
-        throw new Error('Failed to generate PDF');
-      }
-
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = "analysis-report.pdf";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
-
-      await authenticatedFetch("/api/stats", { method: "POST", body: JSON.stringify({ type: "pdf_download", resume_id: resume.id }) })
-    } catch (error) {
-      console.error("PDF download failed:", error)
-      alert("Failed to download PDF report.")
-    }
-  }
 
   function printResume() {
     if (!resume?.id) return
@@ -540,9 +505,12 @@ export default function AnalysisClient({ resumeId }: AnalysisClientProps) {
           <Button variant="ghost" size="icon" asChild>
             <Link href="/profile" title="个人中心">
               {profile?.avatar_url ? (
-                <img
+                <Image
                   src={profile.avatar_url}
                   alt="头像"
+                  width={20}
+                  height={20}
+                  unoptimized
                   className="h-5 w-5 rounded-full object-cover"
                 />
               ) : (
@@ -594,7 +562,7 @@ export default function AnalysisClient({ resumeId }: AnalysisClientProps) {
           </div>
         </div>
 
-        <div ref={sectionRef} className="grid grid-cols-1 lg:grid-cols-3 gap-8" id="analysis-section">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8" id="analysis-section">
           <aside className="lg:col-span-1 flex flex-col gap-6">
             <Card>
               <CardHeader>

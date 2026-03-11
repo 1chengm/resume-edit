@@ -44,7 +44,7 @@ function AuthCodeErrorContent() {
 
       setupSession()
     }
-  }, [router, supabase.auth])
+  }, [router])
 
   async function retryGithub() {
     // 动态获取当前域名，兼容本地和线上环境

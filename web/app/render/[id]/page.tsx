@@ -1,53 +1,59 @@
-import { createSupabaseAdminClient } from '@/src/lib/supabase/admin'
-import { ResumeView } from '@/components/resume-view'
+import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
+import { createSupabaseAdminClient } from '@/lib/supabase/admin'
+import { ResumeView } from '@/components/resume-view'
 
-export default async function RenderPage({
-    params,
-    searchParams,
+async function RenderContent({
+  params,
+  searchParams,
 }: {
-    params: Promise<{ id: string }>
-    searchParams: Promise<{ secret: string }>
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ secret: string }>
 }) {
-    const { id } = await params
-    const { secret } = await searchParams
+  const { id } = await params
+  const { secret } = await searchParams
 
-    if (secret !== process.env.RENDER_SECRET && secret !== 'internal-render-secret') {
-        return notFound()
-    }
+  const renderSecret = process.env.RENDER_SECRET
+  if (!renderSecret || secret !== renderSecret) {
+    return notFound()
+  }
 
-    const supabase = createSupabaseAdminClient()
+  const supabase = createSupabaseAdminClient()
 
-    // Fetch resume data
-    const { data: resume, error: resumeError } = await supabase
-        .from('resumes')
-        .select('color_theme, template')
-        .eq('id', id)
-        .single()
+  const [{ data: resume, error: resumeError }, { data: content, error: contentError }] = await Promise.all([
+    supabase
+      .from('resumes')
+      .select('color_theme, template')
+      .eq('id', id)
+      .single(),
+    supabase
+      .from('resume_content')
+      .select('content_json')
+      .eq('resume_id', id)
+      .single(),
+  ])
 
-    if (resumeError || !resume) {
-        return notFound()
-    }
+  if (resumeError || !resume || contentError) {
+    return notFound()
+  }
 
-    // Fetch content data
-    const { data: content, error: contentError } = await supabase
-        .from('resume_content')
-        .select('content_json')
-        .eq('resume_id', id)
-        .single()
+  return (
+    <div className="min-h-screen bg-white p-0">
+      <ResumeView data={{ resume, content }} />
+    </div>
+  )
+}
 
-    if (contentError) {
-        return notFound()
-    }
-
-    const data = {
-        resume,
-        content
-    }
-
-    return (
-        <div className="min-h-screen bg-white p-0">
-            <ResumeView data={data} />
-        </div>
-    )
+export default function RenderPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ secret: string }>
+}) {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center">Loading...</div>}>
+      <RenderContent params={params} searchParams={searchParams} />
+    </Suspense>
+  )
 }
