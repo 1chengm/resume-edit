@@ -137,7 +137,19 @@ export default function ResumeEditPage() {
   async function createShare() {
     const id = typeof window !== 'undefined' ? location.pathname.split('/')[2] : ''
     const res = await authenticatedFetch('/api/share', { method: 'POST', body: JSON.stringify({ permission: 'public', resume_id: id }) })
-    const data = await res.json()
+    const raw = await res.text()
+    let data: { share_uuid?: string; error?: string } = {}
+    if (raw) {
+      try {
+        data = JSON.parse(raw)
+      } catch {
+        data = {}
+      }
+    }
+    if (!res.ok || !data?.share_uuid) {
+      alert(data?.error || 'Create share link failed')
+      return
+    }
     setShareUrl(`${location.origin}/s/${data.share_uuid}`)
   }
 
@@ -197,7 +209,7 @@ export default function ResumeEditPage() {
             <Share2 className="h-4 w-4" />
             <span className="hidden sm:inline">Share</span>
           </Button>
-          <Button size="sm" onClick={generatePDF} className="gap-2">
+          <Button variant="outline" size="sm" onClick={generatePDF} className="gap-2">
             <Download className="h-4 w-4" />
             <span className="hidden sm:inline">Export PDF</span>
           </Button>

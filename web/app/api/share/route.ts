@@ -1,6 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server'
 import { randomUUID, createHash } from 'crypto'
-import { updateTag } from 'next/cache'
+import { revalidateTag } from 'next/cache'
 import { requireApiUser } from '@/lib/auth/require-user'
 
 export async function POST(req: NextRequest) {
@@ -49,9 +49,9 @@ export async function POST(req: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   if (ownedResume.share_uuid) {
-    updateTag(`share:${ownedResume.share_uuid}`)
+    revalidateTag(`share:${ownedResume.share_uuid}`, 'max')
   }
-  updateTag(`share:${uuid}`)
+  revalidateTag(`share:${uuid}`, 'max')
 
   return NextResponse.json({ share_uuid: uuid, permission })
 }

@@ -1,18 +1,18 @@
 import { NextResponse } from 'next/server'
 import { GET, PATCH, DELETE } from '@/app/api/resumes/[id]/route'
 import { requireApiUser } from '@/lib/auth/require-user'
-import { updateTag } from 'next/cache'
+import { revalidateTag } from 'next/cache'
 
 vi.mock('@/lib/auth/require-user', () => ({
   requireApiUser: vi.fn(),
 }))
 
 vi.mock('next/cache', () => ({
-  updateTag: vi.fn(),
+  revalidateTag: vi.fn(),
 }))
 
 const mockedRequireApiUser = vi.mocked(requireApiUser)
-const mockedUpdateTag = vi.mocked(updateTag)
+const mockedRevalidateTag = vi.mocked(revalidateTag)
 
 type QueryResult<T> = { data: T | null; error: { message: string } | null }
 
@@ -93,7 +93,7 @@ function createSupabaseMock(options?: {
 describe('API /resumes/[id] authorization', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockedUpdateTag.mockReset()
+    mockedRevalidateTag.mockReset()
   })
 
   it('GET returns 401 when not authenticated', async () => {
@@ -202,7 +202,7 @@ describe('API /resumes/[id] authorization', () => {
     expect(res.status).toBe(200)
     expect(body.ok).toBe(true)
     expect(spies.resumeUpdateEqUserId).toHaveBeenCalledWith('user_id', 'user-z')
-    expect(mockedUpdateTag).toHaveBeenCalledWith('share:share-r5')
+    expect(mockedRevalidateTag).toHaveBeenCalledWith('share:share-r5', 'max')
   })
 
   it('DELETE returns 404 when resume ownership check fails', async () => {
@@ -243,6 +243,6 @@ describe('API /resumes/[id] authorization', () => {
     expect(body.ok).toBe(true)
     expect(spies.contentDeleteEq).toHaveBeenCalledWith('resume_id', 'r7')
     expect(spies.resumeDeleteEqUserId).toHaveBeenCalledWith('user_id', 'owner-7')
-    expect(mockedUpdateTag).toHaveBeenCalledWith('share:share-r7')
+    expect(mockedRevalidateTag).toHaveBeenCalledWith('share:share-r7', 'max')
   })
 })

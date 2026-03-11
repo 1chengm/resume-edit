@@ -1,6 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { updateTag } from 'next/cache'
+import { revalidateTag } from 'next/cache'
 import { requireApiUser } from '@/lib/auth/require-user'
 
 async function ensureResumeOwnership(supabase: SupabaseClient, resumeId: string, userId: string) {
@@ -120,7 +120,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   if (resumeMeta?.share_uuid) {
-    updateTag(`share:${resumeMeta.share_uuid}`)
+    revalidateTag(`share:${resumeMeta.share_uuid}`, 'max')
   }
 
   return NextResponse.json({ ok: true })
@@ -156,7 +156,7 @@ export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id:
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   if (resumeMeta?.share_uuid) {
-    updateTag(`share:${resumeMeta.share_uuid}`)
+    revalidateTag(`share:${resumeMeta.share_uuid}`, 'max')
   }
 
   return NextResponse.json({ ok: true })

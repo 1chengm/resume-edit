@@ -1,18 +1,18 @@
 import { NextResponse } from 'next/server'
 import { POST } from '@/app/api/share/route'
 import { requireApiUser } from '@/lib/auth/require-user'
-import { updateTag } from 'next/cache'
+import { revalidateTag } from 'next/cache'
 
 vi.mock('@/lib/auth/require-user', () => ({
   requireApiUser: vi.fn(),
 }))
 
 vi.mock('next/cache', () => ({
-  updateTag: vi.fn(),
+  revalidateTag: vi.fn(),
 }))
 
 const mockedRequireApiUser = vi.mocked(requireApiUser)
-const mockedUpdateTag = vi.mocked(updateTag)
+const mockedRevalidateTag = vi.mocked(revalidateTag)
 
 function createSupabaseMock(options?: {
   ownedResume?: { id: string; share_uuid?: string | null } | null
@@ -55,7 +55,7 @@ function createSupabaseMock(options?: {
 describe('POST /api/share', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockedUpdateTag.mockReset()
+    mockedRevalidateTag.mockReset()
   })
 
   it('returns 401 when unauthorized', async () => {
@@ -98,7 +98,7 @@ describe('POST /api/share', () => {
 
     expect(res.status).toBe(200)
     expect(body.share_uuid).toBeTruthy()
-    expect(mockedUpdateTag).toHaveBeenCalledWith('share:old-share-uuid')
-    expect(mockedUpdateTag).toHaveBeenCalledWith(`share:${body.share_uuid}`)
+    expect(mockedRevalidateTag).toHaveBeenCalledWith('share:old-share-uuid', 'max')
+    expect(mockedRevalidateTag).toHaveBeenCalledWith(`share:${body.share_uuid}`, 'max')
   })
 })
