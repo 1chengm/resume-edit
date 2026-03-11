@@ -153,9 +153,9 @@ export default function DashboardClient({ initialEmail }: DashboardClientProps) 
 
   return (
     <>
-      <div className="flex min-h-screen bg-muted/10">
+      <div className="flex min-h-screen atelier-app-bg atelier-grid-bg">
         {/* Sidebar */}
-        <aside className="w-64 bg-background border-r hidden md:flex flex-col">
+        <aside className="w-64 bg-background/85 backdrop-blur-md border-r border-border/70 hidden md:flex flex-col">
           <div className="p-6 border-b">
             <div className="flex items-center gap-2 font-bold text-xl text-primary">
               <FileText className="h-6 w-6" />
@@ -215,7 +215,7 @@ export default function DashboardClient({ initialEmail }: DashboardClientProps) 
 
         {/* Main Content */}
         <main className="flex-1 flex flex-col">
-          <header className="h-16 border-b bg-background/80 backdrop-blur-sm flex items-center justify-between px-6 sticky top-0 z-10">
+          <header className="h-16 atelier-topbar flex items-center justify-between px-6 sticky top-0 z-10">
             <h1 className="text-xl font-semibold">My Resumes</h1>
             <div className="flex items-center gap-4">
               <Button onClick={() => setChooserOpen(true)} disabled={creating}>
@@ -232,7 +232,7 @@ export default function DashboardClient({ initialEmail }: DashboardClientProps) 
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search resumes..."
-                  className="pl-9 bg-background"
+                  className="pl-9 bg-background/90"
                   value={query}
                   onChange={e => setQuery(e.target.value)}
                 />
@@ -262,7 +262,7 @@ export default function DashboardClient({ initialEmail }: DashboardClientProps) 
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filtered.map((item) => (
-                  <Card key={item.id} className="group hover:shadow-md transition-all duration-200 border-muted/60">
+                  <Card key={item.id} className="group hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 border-border/70 bg-background/85 backdrop-blur">
                     <CardHeader className="pb-3">
                       <div className="flex justify-between items-start">
                         <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-2">
@@ -287,19 +287,19 @@ export default function DashboardClient({ initialEmail }: DashboardClientProps) 
                       </div>
                       <div className="flex gap-1">
                         <Link href={`/resume/${item.id}/analysis`}>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-indigo-500 hover:text-indigo-600 hover:bg-indigo-50" title="AI Analysis">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10" title="AI Analysis">
                             <Sparkles className="h-4 w-4" />
                           </Button>
                         </Link>
                         <Link href={`/resume/${item.id}/jd-match`}>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-orange-500 hover:text-orange-600 hover:bg-orange-50" title="JD Match">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-600 hover:text-amber-700 hover:bg-amber-100/70" title="JD Match">
                             <Target className="h-4 w-4" />
                           </Button>
                         </Link>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50"
+                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
                           title="Delete Resume"
                           onClick={(e) => handleDeleteClick(item.id, item.title, e)}
                           disabled={deleting && resumeToDelete === item.id}
@@ -321,8 +321,8 @@ export default function DashboardClient({ initialEmail }: DashboardClientProps) 
 
         {/* Template Chooser Modal */}
         {chooserOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-            <Card className="w-full max-w-4xl max-h-[90vh] overflow-auto shadow-2xl">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 backdrop-blur-sm p-4">
+            <Card className="w-full max-w-4xl max-h-[90vh] overflow-auto shadow-2xl border-border/70">
               <CardHeader className="border-b sticky top-0 bg-background z-10 flex flex-row items-center justify-between">
                 <div>
                   <CardTitle>Choose a Template</CardTitle>

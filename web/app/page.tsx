@@ -1,179 +1,236 @@
 import Link from "next/link"
 import { Suspense } from "react"
+import { Noto_Sans_SC, Noto_Serif_SC } from "next/font/google"
 import { Button } from "@/components/ui/button"
-import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { CurrentYear } from "@/components/current-year"
-import { FileText, Sparkles, Download } from "lucide-react"
+import { ArrowRight, CheckCircle2, FileText, Sparkles, Target, Wand2 } from "lucide-react"
+
+const pageSans = Noto_Sans_SC({
+  variable: "--font-page-sans",
+  subsets: ["latin"],
+  weight: ["400", "500", "700", "900"],
+})
+
+const pageSerif = Noto_Serif_SC({
+  variable: "--font-page-serif",
+  subsets: ["latin"],
+  weight: ["600", "700", "900"],
+})
+
+const featureCards = [
+  {
+    icon: Sparkles,
+    title: "AI 语义润色",
+    desc: "把“会做事”变成“会表达价值”，自然贴合岗位关键词。",
+  },
+  {
+    icon: Target,
+    title: "JD 定向匹配",
+    desc: "对照岗位要求给出修改建议，突出最该被看见的能力。",
+  },
+  {
+    icon: FileText,
+    title: "实时排版预览",
+    desc: "编辑与成稿同步，所见即所得，减少反复导出成本。",
+  },
+  {
+    icon: Wand2,
+    title: "一键浏览器导出",
+    desc: "保持结构稳定，打印即 PDF，快速用于投递与分享。",
+  },
+]
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Navbar */}
-      <header className="border-b sticky top-0 z-50 bg-background/80 backdrop-blur-md">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2 font-bold text-xl text-primary">
-            <FileText className="h-6 w-6" />
-            <span>ResumeCraft</span>
-          </div>
-          <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
-            <Link href="#features" className="hover:text-foreground transition-colors">Features</Link>
-            <Link href="#how-it-works" className="hover:text-foreground transition-colors">How it Works</Link>
-            <Link href="#pricing" className="hover:text-foreground transition-colors">Pricing</Link>
-          </nav>
-          <div className="flex items-center gap-4">
+    <div className={`${pageSans.variable} ${pageSerif.variable} relative min-h-screen bg-background text-foreground`}>
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        <div className="absolute -top-40 left-1/2 h-[460px] w-[460px] -translate-x-1/2 rounded-full bg-primary/20 blur-[110px]" />
+        <div className="absolute right-[5%] top-[28%] h-[320px] w-[320px] rounded-full bg-cyan-400/20 blur-[100px]" />
+        <div className="absolute bottom-0 left-[8%] h-[320px] w-[320px] rounded-full bg-amber-300/20 blur-[100px]" />
+        <div className="hero-noise absolute inset-0 opacity-30" />
+      </div>
+
+      <header className="sticky top-0 z-40 border-b border-border/60 bg-background/70 backdrop-blur-xl">
+        <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6">
+          <Link href="/" className="flex items-center gap-2">
+            <div className="rounded-lg bg-primary/10 p-1.5 text-primary">
+              <FileText className="h-5 w-5" />
+            </div>
+            <span className="text-base font-semibold tracking-wide">ResumeCraft Atelier</span>
+          </Link>
+
+          <div className="flex items-center gap-2">
             <Link href="/sign-in">
-              <Button variant="ghost" size="sm">Log in</Button>
+              <Button variant="ghost" size="sm" className="h-9 px-4">
+                登录
+              </Button>
             </Link>
-            <Link href="/sign-in">
-              <Button size="sm">Get Started</Button>
+            <Link href="/sign-up">
+              <Button size="sm" className="h-9 px-4">
+                免费开始
+              </Button>
             </Link>
           </div>
         </div>
       </header>
 
-      <main className="flex-1">
-        {/* Hero Section */}
-        <section className="relative py-20 md:py-32 overflow-hidden">
-          <div className="absolute inset-0 -z-10 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px]"></div>
-          <div className="absolute left-0 right-0 top-0 -z-10 m-auto h-[310px] w-[310px] rounded-full bg-primary/20 opacity-20 blur-[100px]"></div>
-
-          <div className="container mx-auto px-4 text-center max-w-4xl">
-            <div className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-primary/10 text-primary hover:bg-primary/20 mb-6">
-              <Sparkles className="mr-1 h-3 w-3" />
-              <span>Powered by Advanced AI</span>
+      <main>
+        <section className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-10 px-4 pb-16 pt-14 sm:px-6 lg:grid-cols-12 lg:gap-12 lg:pt-20">
+          <div className="lg:col-span-7">
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+              <Sparkles className="h-3.5 w-3.5" />
+              为中文求职场景而设计
             </div>
-            <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-              Craft Your Perfect Resume <br className="hidden md:block" /> in Minutes, Not Hours
+
+            <h1 className="mt-6 text-4xl font-black leading-tight tracking-tight sm:text-5xl lg:text-6xl [font-family:var(--font-page-serif)]">
+              简历不是表格。
+              <br />
+              它是你的职业叙事。
             </h1>
-            <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
-              Create professional, ATS-friendly resumes with our AI-powered builder.
-              Get real-time feedback, optimize for job descriptions, and land your dream job.
+
+            <p className="mt-6 max-w-2xl text-base leading-8 text-muted-foreground sm:text-lg">
+              用更现代的方式整理经历、匹配岗位、优化措辞，并以高质量 PDF 输出。
+              从第一眼开始，让招聘方读到重点，而不是读到冗余。
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href="/sign-in">
-                <Button size="lg" className="h-12 px-8 text-base">
-                  Create My Resume
+
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+              <Link href="/sign-up">
+                <Button size="lg" className="group h-11 px-6">
+                  创建我的简历
+                  <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </Button>
               </Link>
-              <Link href="#features">
-                <Button variant="outline" size="lg" className="h-12 px-8 text-base">
-                  Learn More
+              <Link href="/sign-in">
+                <Button variant="outline" size="lg" className="h-11 px-6">
+                  进入工作台
                 </Button>
               </Link>
             </div>
 
-            {/* Hero Image Placeholder */}
-            <div className="mt-16 rounded-xl border bg-card p-2 shadow-2xl">
-              <div className="rounded-lg border bg-muted/50 aspect-[16/9] flex items-center justify-center text-muted-foreground">
-                Resume Editor Preview
+            <div className="mt-10 grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div className="rounded-xl border bg-background/70 p-4 shadow-sm">
+                <p className="text-xl font-bold">10x</p>
+                <p className="mt-1 text-sm text-muted-foreground">更快完成初稿</p>
+              </div>
+              <div className="rounded-xl border bg-background/70 p-4 shadow-sm">
+                <p className="text-xl font-bold">ATS 友好</p>
+                <p className="mt-1 text-sm text-muted-foreground">结构清晰，关键词可读</p>
+              </div>
+              <div className="rounded-xl border bg-background/70 p-4 shadow-sm">
+                <p className="text-xl font-bold">一键导出</p>
+                <p className="mt-1 text-sm text-muted-foreground">浏览器打印即 PDF</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="lg:col-span-5">
+            <div className="relative mx-auto max-w-md">
+              <div className="hero-float rounded-2xl border bg-white p-6 shadow-2xl">
+                <div className="mb-5 flex items-center justify-between">
+                  <span className="text-sm font-semibold text-primary">Preview</span>
+                  <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                    Ready to export
+                  </span>
+                </div>
+                <div className="space-y-3">
+                  <div className="h-3 w-2/3 rounded bg-slate-900/80" />
+                  <div className="h-2.5 w-1/3 rounded bg-slate-400/80" />
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    <div className="h-2 rounded bg-slate-200" />
+                    <div className="h-2 rounded bg-slate-200" />
+                    <div className="h-2 rounded bg-slate-200" />
+                    <div className="h-2 rounded bg-slate-200" />
+                  </div>
+                  <div className="mt-4 space-y-2">
+                    <div className="h-2.5 w-full rounded bg-slate-200" />
+                    <div className="h-2.5 w-[92%] rounded bg-slate-200" />
+                    <div className="h-2.5 w-[80%] rounded bg-slate-200" />
+                  </div>
+                </div>
+              </div>
+              <div className="absolute -bottom-4 -left-4 max-w-[230px] rounded-xl border bg-background/95 p-3 shadow-lg backdrop-blur">
+                <p className="text-xs font-semibold text-primary">岗位匹配建议</p>
+                <p className="mt-1 text-xs text-muted-foreground">建议强调“跨团队协作”和“可量化结果”。</p>
+              </div>
+              <div className="absolute -right-4 -top-4 rounded-xl border bg-background/95 px-3 py-2 text-xs font-medium shadow-lg backdrop-blur">
+                ATS Score +18%
               </div>
             </div>
           </div>
         </section>
 
-        {/* Features Section */}
-        <section id="features" className="py-20 bg-muted/30">
-          <div className="container mx-auto px-4">
-            <div className="text-center max-w-2xl mx-auto mb-16">
-              <h2 className="text-3xl font-bold tracking-tight mb-4">Everything you need to stand out</h2>
-              <p className="text-muted-foreground">
-                Our platform provides all the tools you need to create a compelling resume that gets past ATS and catches recruiters&apos; eyes.
-              </p>
+        <section className="mx-auto w-full max-w-7xl px-4 pb-16 sm:px-6">
+          <div className="rounded-3xl border bg-background/70 p-6 shadow-sm backdrop-blur sm:p-8">
+            <div className="mb-6 flex items-end justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Capabilities</p>
+                <h2 className="mt-2 text-2xl font-bold tracking-tight [font-family:var(--font-page-serif)] sm:text-3xl">
+                  一套工具，打通从编辑到投递
+                </h2>
+              </div>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-8">
-              <Card className="bg-background/50 backdrop-blur-sm border-muted/50">
-                <CardHeader>
-                  <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4 text-primary">
-                    <Sparkles className="h-6 w-6" />
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {featureCards.map((item) => (
+                <article key={item.title} className="group rounded-2xl border bg-card/80 p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+                  <div className="mb-3 inline-flex rounded-lg bg-primary/10 p-2 text-primary">
+                    <item.icon className="h-4 w-4" />
                   </div>
-                  <CardTitle>AI Optimization</CardTitle>
-                  <CardDescription>
-                    Get smart suggestions to improve your content and match job descriptions perfectly.
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-
-              <Card className="bg-background/50 backdrop-blur-sm border-muted/50">
-                <CardHeader>
-                  <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4 text-primary">
-                    <FileText className="h-6 w-6" />
-                  </div>
-                  <CardTitle>Real-time Preview</CardTitle>
-                  <CardDescription>
-                    See your changes instantly as you type. Switch between templates with a single click.
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-
-              <Card className="bg-background/50 backdrop-blur-sm border-muted/50">
-                <CardHeader>
-                  <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4 text-primary">
-                    <Download className="h-6 w-6" />
-                  </div>
-                  <CardTitle>PDF Export</CardTitle>
-                  <CardDescription>
-                    Download high-quality PDFs that are compatible with all major application systems.
-                  </CardDescription>
-                </CardHeader>
-              </Card>
+                  <h3 className="text-lg font-semibold">{item.title}</h3>
+                  <p className="mt-2 text-sm leading-7 text-muted-foreground">{item.desc}</p>
+                </article>
+              ))}
             </div>
           </div>
         </section>
 
-        {/* CTA Section */}
-        <section className="py-20">
-          <div className="container mx-auto px-4">
-            <div className="bg-primary text-primary-foreground rounded-2xl p-8 md:p-16 text-center relative overflow-hidden">
-              <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff1a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff1a_1px,transparent_1px)] bg-[size:24px_24px] opacity-20"></div>
-              <div className="relative z-10 max-w-2xl mx-auto">
-                <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to build your career?</h2>
-                <p className="text-primary-foreground/80 mb-8 text-lg">
-                  Join thousands of professionals who have successfully landed jobs using ResumeCraft.
+        <section className="mx-auto w-full max-w-7xl px-4 pb-20 sm:px-6">
+          <div className="rounded-3xl border bg-gradient-to-br from-primary/95 via-primary to-cyan-500 p-8 text-primary-foreground shadow-2xl sm:p-10">
+            <div className="grid gap-8 lg:grid-cols-12">
+              <div className="lg:col-span-8">
+                <p className="text-sm uppercase tracking-[0.18em] text-primary-foreground/80">Start now</p>
+                <h2 className="mt-3 text-3xl font-bold leading-tight [font-family:var(--font-page-serif)] sm:text-4xl">
+                  把简历升级为你的职业作品集首页
+                </h2>
+                <p className="mt-4 max-w-2xl text-primary-foreground/85">
+                  立即创建并体验：内容分析、岗位匹配、预览导出一体化流程。无须复杂学习，直接进入高质量产出。
                 </p>
-                <Link href="/sign-in">
-                  <Button size="lg" variant="secondary" className="h-12 px-8 text-base font-semibold">
-                    Get Started for Free
-                  </Button>
-                </Link>
+              </div>
+
+              <div className="lg:col-span-4">
+                <div className="rounded-2xl border border-white/30 bg-white/10 p-5 backdrop-blur">
+                  <ul className="space-y-3 text-sm">
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4" />
+                      多模板编辑
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4" />
+                      简历智能分析
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4" />
+                      浏览器快速导出
+                    </li>
+                  </ul>
+                  <Link href="/sign-up" className="mt-5 block">
+                    <Button variant="secondary" className="w-full">
+                      免费创建账号
+                    </Button>
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
         </section>
       </main>
 
-      <footer className="border-t py-12 bg-muted/20">
-        <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
-            <div className="col-span-1 md:col-span-2">
-              <div className="flex items-center gap-2 font-bold text-xl text-primary mb-4">
-                <FileText className="h-6 w-6" />
-                <span>ResumeCraft</span>
-              </div>
-              <p className="text-muted-foreground max-w-sm">
-                The smartest way to build, optimize, and share your professional resume.
-              </p>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4">Product</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link href="#" className="hover:text-foreground">Features</Link></li>
-                <li><Link href="#" className="hover:text-foreground">Templates</Link></li>
-                <li><Link href="#" className="hover:text-foreground">Pricing</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4">Company</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link href="#" className="hover:text-foreground">About</Link></li>
-                <li><Link href="#" className="hover:text-foreground">Blog</Link></li>
-                <li><Link href="#" className="hover:text-foreground">Contact</Link></li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t pt-8 text-center text-sm text-muted-foreground">
-            © <Suspense fallback="----"><CurrentYear /></Suspense> ResumeCraft. All rights reserved.
-          </div>
+      <footer className="border-t border-border/60 py-8">
+        <div className="mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-2 px-4 text-sm text-muted-foreground sm:flex-row sm:px-6">
+          <p>ResumeCraft Atelier</p>
+          <p>
+            © <Suspense fallback="----"><CurrentYear /></Suspense> All rights reserved.
+          </p>
         </div>
       </footer>
     </div>

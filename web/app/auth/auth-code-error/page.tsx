@@ -71,31 +71,31 @@ function AuthCodeErrorContent() {
   }
 
   return (
-    <div className="flex min-h-svh w-full items-center justify-center bg-background-light dark:bg-background-dark p-6">
-      <div className="w-full max-w-xl rounded-xl border border-[#cfdbe7] dark:border-slate-700 bg-white dark:bg-[#0f1720] p-8 shadow-sm">
+    <div className="atelier-app-bg atelier-grid-bg flex min-h-svh w-full items-center justify-center p-6">
+      <div className="w-full max-w-xl atelier-panel p-8">
         <div className="text-center mb-6">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900">
-            <svg className="h-6 w-6 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/15">
+            <svg className="h-6 w-6 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-[#0d141b] dark:text-slate-50">登录遇到问题</h1>
-          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+          <h1 className="text-2xl font-bold">登录遇到问题</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
             {error || '登录过程中出现了问题，请尝试以下解决方法'}
           </p>
         </div>
 
         {/* 显示详细错误信息（调试用） */}
         {(details || timestamp) && (
-          <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-            <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-300 mb-2">调试信息</h3>
+          <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+            <h3 className="text-sm font-medium text-amber-700 mb-2">调试信息</h3>
             {details && (
-              <p className="text-xs text-yellow-700 dark:text-yellow-400 mb-1">
+              <p className="text-xs text-amber-700 mb-1">
                 <strong>详情:</strong> {details}
               </p>
             )}
             {timestamp && (
-              <p className="text-xs text-yellow-700 dark:text-yellow-400">
+              <p className="text-xs text-amber-700">
                 <strong>时间:</strong> {new Date(timestamp).toLocaleString('zh-CN')}
               </p>
             )}
@@ -103,16 +103,16 @@ function AuthCodeErrorContent() {
         )}
 
         <div className="space-y-4">
-          <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4">
-            <h3 className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-3">常见解决方法：</h3>
-            <ul className="space-y-2 text-sm text-slate-700 dark:text-slate-300">
+          <div className="bg-muted/50 rounded-lg p-4 border">
+            <h3 className="text-sm font-medium mb-3">常见解决方法：</h3>
+            <ul className="space-y-2 text-sm text-muted-foreground">
               <li className="flex items-start">
                 <span className="text-primary mr-2">•</span>
-                <span>在 Supabase Auth 设置中，确保 Site URL 为 <code className="bg-slate-200 dark:bg-slate-700 px-1 rounded">http://localhost:3000</code></span>
+                <span>在 Supabase Auth 设置中，确保 Site URL 为 <code className="bg-muted px-1 rounded">http://localhost:3000</code></span>
               </li>
               <li className="flex items-start">
                 <span className="text-primary mr-2">•</span>
-                <span>在 Redirect URLs 添加 <code className="bg-slate-200 dark:bg-slate-700 px-1 rounded">http://localhost:3000/auth/callback</code></span>
+                <span>在 Redirect URLs 添加 <code className="bg-muted px-1 rounded">http://localhost:3000/auth/callback</code></span>
               </li>
               <li className="flex items-start">
                 <span className="text-primary mr-2">•</span>
@@ -120,7 +120,7 @@ function AuthCodeErrorContent() {
               </li>
               <li className="flex items-start">
                 <span className="text-primary mr-2">•</span>
-                <span>本地环境变量已设置 <code className="bg-slate-200 dark:bg-slate-700 px-1 rounded">NEXT_PUBLIC_SUPABASE_URL</code> 与 <code className="bg-slate-200 dark:bg-slate-700 px-1 rounded">NEXT_PUBLIC_SUPABASE_ANON_KEY</code></span>
+                <span>本地环境变量已设置 <code className="bg-muted px-1 rounded">NEXT_PUBLIC_SUPABASE_URL</code> 与 <code className="bg-muted px-1 rounded">NEXT_PUBLIC_SUPABASE_ANON_KEY</code></span>
               </li>
             </ul>
           </div>
@@ -128,7 +128,7 @@ function AuthCodeErrorContent() {
           <div className="flex flex-col sm:flex-row gap-3">
             <button
               onClick={goToSignIn}
-              className="flex-1 h-10 rounded-lg bg-[#e5e7eb] dark:bg-slate-700 px-4 text-[#0d141b] dark:text-slate-50 hover:bg-[#dfe3e7] dark:hover:bg-slate-600 transition-colors"
+              className="flex-1 h-10 rounded-lg bg-muted px-4 hover:bg-muted/80 transition-colors"
             >
               返回登录页
             </button>
@@ -142,14 +142,14 @@ function AuthCodeErrorContent() {
 
           <button
             onClick={goHome}
-            className="w-full h-10 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-transparent text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+            className="w-full h-10 rounded-lg border bg-background hover:bg-muted/40 transition-colors"
           >
             返回首页
           </button>
         </div>
 
-        <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
-          <p className="text-xs text-slate-500 dark:text-slate-400 text-center">
+        <div className="mt-6 pt-6 border-t">
+          <p className="text-xs text-muted-foreground text-center">
             如果问题持续存在，请检查浏览器控制台获取详细错误信息
           </p>
         </div>
@@ -160,7 +160,7 @@ function AuthCodeErrorContent() {
 
 export default function AuthCodeErrorPage() {
   return (
-    <Suspense fallback={<div className="flex min-h-svh w-full items-center justify-center">Loading...</div>}>
+    <Suspense fallback={<div className="atelier-loading">Loading...</div>}>
       <AuthCodeErrorContent />
     </Suspense>
   )

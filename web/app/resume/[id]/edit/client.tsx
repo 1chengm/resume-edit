@@ -154,18 +154,19 @@ export default function ResumeEditPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-muted/10">
+    <div className="flex flex-col h-screen atelier-app-bg atelier-grid-bg">
       {/* Header */}
-      <header className="h-16 border-b bg-background flex items-center justify-between px-4 lg:px-6 sticky top-0 z-20 shadow-sm no-print">
+      <header className="h-16 atelier-topbar flex items-center justify-between px-4 lg:px-6 sticky top-0 z-20 shadow-sm no-print">
         <div className="flex items-center gap-4">
           <Link href="/dashboard">
-            <Button variant="ghost" size="icon" className="rounded-full">
+            <Button variant="ghost" size="icon" className="rounded-full" aria-label="Back to dashboard">
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </Link>
           <div className="flex flex-col">
             <h2 className="text-lg font-bold leading-tight">Resume Editor</h2>
-            <span className={cn("text-xs font-medium", dirty ? "text-yellow-600" : "text-muted-foreground")}>
+            <span className={cn("text-xs font-medium inline-flex items-center gap-1.5", dirty ? "text-amber-700" : "text-emerald-700")}>
+              <span className={cn("h-1.5 w-1.5 rounded-full", dirty ? "bg-amber-500" : "bg-emerald-500")} aria-hidden="true" />
               {dirty ? "Unsaved changes" : savedText}
             </span>
           </div>
@@ -201,25 +202,27 @@ export default function ResumeEditPage() {
 
           <div className="h-6 w-px bg-border mx-2 hidden md:block"></div>
 
-          <Button variant="outline" size="sm" onClick={saveWithRetry} className="gap-2">
-            <Save className="h-4 w-4" />
-            <span className="hidden sm:inline">Save</span>
-          </Button>
-          <Button variant="outline" size="sm" onClick={createShare} className="gap-2">
-            <Share2 className="h-4 w-4" />
-            <span className="hidden sm:inline">Share</span>
-          </Button>
-          <Button variant="outline" size="sm" onClick={generatePDF} className="gap-2">
-            <Download className="h-4 w-4" />
-            <span className="hidden sm:inline">Export PDF</span>
-          </Button>
+          <div className="flex items-center rounded-xl border bg-background/90 p-1 shadow-sm">
+            <Button variant="ghost" size="sm" onClick={saveWithRetry} className="gap-2 h-8 px-3 rounded-md" aria-label="Save resume">
+              <Save className="h-4 w-4" />
+              <span className="hidden sm:inline">Save</span>
+            </Button>
+            <Button variant="ghost" size="sm" onClick={createShare} className="gap-2 h-8 px-3 rounded-md" aria-label="Create share link">
+              <Share2 className="h-4 w-4" />
+              <span className="hidden sm:inline">Share</span>
+            </Button>
+            <Button variant="ghost" size="sm" onClick={generatePDF} className="gap-2 h-8 px-3 rounded-md" aria-label="Export resume as PDF">
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline">Export PDF</span>
+            </Button>
+          </div>
         </div>
       </header>
 
       {/* Main Content */}
       <main className="flex-grow flex overflow-hidden">
         {/* Editor Panel */}
-        <section className="w-full lg:w-1/2 xl:w-2/5 bg-background border-r overflow-y-auto p-6 space-y-6 no-print">
+        <section className="w-full lg:w-1/2 xl:w-[46%] 2xl:w-[44%] bg-background border-r overflow-y-auto p-6 space-y-6 no-print">
 
           {/* Personal Info */}
           <div className="space-y-4">
@@ -229,27 +232,27 @@ export default function ResumeEditPage() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">Full Name</label>
+                <label className="text-sm font-medium text-muted-foreground">Full Name</label>
                 <Input value={form.fullName} onChange={e => update('fullName', e.target.value)} placeholder="John Doe" />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">Job Title</label>
+                <label className="text-sm font-medium text-muted-foreground">Job Title</label>
                 <Input value={form.title} onChange={e => update('title', e.target.value)} placeholder="Software Engineer" />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">Phone</label>
+                <label className="text-sm font-medium text-muted-foreground">Phone</label>
                 <Input value={form.phone} onChange={e => update('phone', e.target.value)} placeholder="+1 234 567 890" />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">Email</label>
+                <label className="text-sm font-medium text-muted-foreground">Email</label>
                 <Input value={form.email} onChange={e => update('email', e.target.value)} placeholder="john@example.com" />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">LinkedIn</label>
+                <label className="text-sm font-medium text-muted-foreground">LinkedIn</label>
                 <Input value={form.linkedin} onChange={e => update('linkedin', e.target.value)} placeholder="linkedin.com/in/johndoe" />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">Portfolio</label>
+                <label className="text-sm font-medium text-muted-foreground">Portfolio</label>
                 <Input value={form.portfolio} onChange={e => update('portfolio', e.target.value)} placeholder="johndoe.com" />
               </div>
             </div>
@@ -265,13 +268,13 @@ export default function ResumeEditPage() {
                 <h3>Professional Summary</h3>
               </div>
               <div className="flex gap-1 bg-muted/50 p-1 rounded-md">
-                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { const el = summaryRef.current; if (!el) return; const { selectionStart, selectionEnd, value } = el; const selected = value.slice(selectionStart, selectionEnd); const next = value.slice(0, selectionStart) + `**${selected}**` + value.slice(selectionEnd); el.value = next; update('summary', next); el.focus(); const pos = selectionStart + 2 + selected.length + 2; el.selectionStart = el.selectionEnd = pos }}>
+                <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="Bold selection" onClick={() => { const el = summaryRef.current; if (!el) return; const { selectionStart, selectionEnd, value } = el; const selected = value.slice(selectionStart, selectionEnd); const next = value.slice(0, selectionStart) + `**${selected}**` + value.slice(selectionEnd); el.value = next; update('summary', next); el.focus(); const pos = selectionStart + 2 + selected.length + 2; el.selectionStart = el.selectionEnd = pos }}>
                   <Bold className="h-3 w-3" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { const el = summaryRef.current; if (!el) return; const { selectionStart, selectionEnd, value } = el; const selected = value.slice(selectionStart, selectionEnd); const next = value.slice(0, selectionStart) + `*${selected}*` + value.slice(selectionEnd); el.value = next; update('summary', next); el.focus(); const pos = selectionStart + 1 + selected.length + 1; el.selectionStart = el.selectionEnd = pos }}>
+                <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="Italic selection" onClick={() => { const el = summaryRef.current; if (!el) return; const { selectionStart, selectionEnd, value } = el; const selected = value.slice(selectionStart, selectionEnd); const next = value.slice(0, selectionStart) + `*${selected}*` + value.slice(selectionEnd); el.value = next; update('summary', next); el.focus(); const pos = selectionStart + 1 + selected.length + 1; el.selectionStart = el.selectionEnd = pos }}>
                   <Italic className="h-3 w-3" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { const el = summaryRef.current; if (!el) return; const { selectionStart, value } = el; const lineStart = value.lastIndexOf('\n', selectionStart - 1) + 1; const next = value.slice(0, lineStart) + '- ' + value.slice(lineStart); el.value = next; update('summary', next); el.focus(); const pos = selectionStart + 2; el.selectionStart = el.selectionEnd = pos }}>
+                <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="Insert bullet point" onClick={() => { const el = summaryRef.current; if (!el) return; const { selectionStart, value } = el; const lineStart = value.lastIndexOf('\n', selectionStart - 1) + 1; const next = value.slice(0, lineStart) + '- ' + value.slice(lineStart); el.value = next; update('summary', next); el.focus(); const pos = selectionStart + 2; el.selectionStart = el.selectionEnd = pos }}>
                   <List className="h-3 w-3" />
                 </Button>
               </div>
@@ -466,13 +469,13 @@ export default function ResumeEditPage() {
         {/* Preview Panel */}
         <section className="hidden lg:flex flex-1 bg-muted/30 p-8 items-start justify-center overflow-y-auto relative print-visible">
           <div className="fixed bottom-8 right-8 flex flex-col gap-2 z-30 no-print">
-            <Button variant="secondary" size="icon" onClick={() => setScale(prev => Math.min(1.5, +(prev + 0.1).toFixed(2)))} title="Zoom In">
+            <Button variant="secondary" size="icon" onClick={() => setScale(prev => Math.min(1.5, +(prev + 0.1).toFixed(2)))} title="Zoom In" aria-label="Zoom in preview">
               <ZoomIn className="h-4 w-4" />
             </Button>
             <div className="bg-background text-xs font-medium py-1 px-2 rounded-md shadow text-center border">
               {Math.round(scale * 100)}%
             </div>
-            <Button variant="secondary" size="icon" onClick={() => setScale(prev => Math.max(0.5, +(prev - 0.1).toFixed(2)))} title="Zoom Out">
+            <Button variant="secondary" size="icon" onClick={() => setScale(prev => Math.max(0.5, +(prev - 0.1).toFixed(2)))} title="Zoom Out" aria-label="Zoom out preview">
               <ZoomOut className="h-4 w-4" />
             </Button>
           </div>

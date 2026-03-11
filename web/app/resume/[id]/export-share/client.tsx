@@ -86,15 +86,19 @@ export default function ExportSharePage() {
   }
 
   return (
-    <div className="p-8 space-y-4">
-      <div className="flex items-center justify-end">
-        <Button variant="outline" size="sm" onClick={generatePDF} className="gap-2">
-          <Download className="h-4 w-4" />
-          <span className="hidden sm:inline">预览简历导出</span>
-        </Button>
+    <div className="min-h-screen atelier-app-bg atelier-grid-bg">
+      <div className="sticky top-0 z-20 atelier-topbar no-print">
+        <div className="mx-auto max-w-[1200px] px-4 py-3 sm:px-8 flex items-center justify-end">
+          <div className="flex items-center rounded-xl border bg-background/90 p-1 shadow-sm">
+            <Button variant="ghost" size="sm" onClick={generatePDF} className="gap-2 h-8 px-3 rounded-md" aria-label="Export preview as PDF">
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline">预览简历导出</span>
+            </Button>
+          </div>
+        </div>
       </div>
-      <div className="mt-6">
-        <div className="mx-auto w-full max-w-[210mm] min-h-[297mm] bg-white rounded-lg shadow p-10" style={{ borderTopColor: resumeMetadata?.color_theme || '#2b8cee' }}>
+      <div className="px-4 py-6 sm:px-8">
+        <div className="mx-auto w-full max-w-[210mm] min-h-[297mm] bg-white rounded-xl shadow-xl p-10 resume-print resume-content" style={{ borderTopColor: resumeMetadata?.color_theme || '#2b8cee' }}>
           <header className="text-center border-b-2 pb-4 mb-6" style={{ borderColor: resumeMetadata?.color_theme || '#2b8cee' }}>
             <h1 className="text-4xl font-bold mb-2" style={{ color: resumeMetadata?.color_theme || '#2b8cee' }}>
               {resumeContent?.personal?.full_name || '姓名'}
@@ -184,7 +188,7 @@ export default function ExportSharePage() {
               <h2 className="text-lg font-bold mb-3" style={{ color: resumeMetadata?.color_theme || '#2b8cee' }}>技能</h2>
               <div className="flex flex-wrap gap-2">
                 {resumeContent.skills.map((skill: string, idx: number) => (
-                  <span key={idx} className="bg-blue-100 text-blue-700 text-xs font-semibold px-3 py-1 rounded-full">
+                  <span key={idx} className="bg-secondary text-secondary-foreground text-xs font-semibold px-3 py-1 rounded-full">
                     {skill}
                   </span>
                 ))}
@@ -197,7 +201,7 @@ export default function ExportSharePage() {
               <h2 className="text-lg font-bold mb-3" style={{ color: resumeMetadata?.color_theme || '#2b8cee' }}>证书</h2>
               <div className="flex flex-wrap gap-2">
                 {resumeContent.certificates.map((cert: string, idx: number) => (
-                  <span key={idx} className="bg-gray-100 text-gray-700 text-xs font-semibold px-3 py-1 rounded-full">
+                  <span key={idx} className="bg-muted text-muted-foreground text-xs font-semibold px-3 py-1 rounded-full">
                     {cert}
                   </span>
                 ))}

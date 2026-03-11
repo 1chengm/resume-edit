@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   FileEdit,
+  ArrowLeft,
   CheckCircle,
   AlertTriangle,
   Lightbulb,
@@ -61,22 +62,35 @@ export default function JDMatchPage() {
   }
 
   return (
-    <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-8">
-      <div className="flex flex-wrap justify-between items-start gap-4">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">JD Match Analysis</h1>
-          <p className="text-muted-foreground">Paste the job description to see how well your resume matches.</p>
+    <div className="min-h-screen atelier-app-bg atelier-grid-bg">
+      <header className="h-16 atelier-topbar flex items-center justify-between px-6 sticky top-0 z-10">
+        <div className="flex items-center gap-3">
+          <Link href={isClient && id ? `/resume/${id}/edit` : '/dashboard'}>
+            <Button variant="ghost" size="icon" title="返回编辑">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-lg font-semibold">JD Match Analysis</h1>
+            <p className="text-xs text-muted-foreground">岗位匹配与优化建议</p>
+          </div>
         </div>
-        <Link href={isClient && id ? `/resume/${id}/edit` : '#'}>
-          <Button className="gap-2">
+        <Link href={isClient && id ? `/resume/${id}/edit` : '#'} className="hidden sm:block">
+          <Button variant="outline" className="gap-2">
             <FileEdit className="h-4 w-4" />
             Edit Resume
           </Button>
         </Link>
-      </div>
+      </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-1 h-fit">
+      <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-8">
+        <div className="space-y-1">
+          <h2 className="text-3xl font-bold tracking-tight">岗位匹配分析</h2>
+          <p className="text-muted-foreground">粘贴岗位 JD，评估简历匹配度并生成建议。</p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <Card className="lg:col-span-1 h-fit bg-background/88 backdrop-blur border-border/70">
           <CardHeader>
             <CardTitle>Input Data</CardTitle>
           </CardHeader>
@@ -105,7 +119,7 @@ export default function JDMatchPage() {
         </Card>
 
         <div className="lg:col-span-1 space-y-6">
-          <Card className="flex flex-col items-center text-center p-6">
+          <Card className="flex flex-col items-center text-center p-6 bg-background/88 backdrop-blur border-border/70">
             <h3 className="text-lg font-semibold mb-4">Match Score</h3>
             <div className="relative size-48 mb-4">
               <svg className="size-full" viewBox="0 0 36 36">
@@ -129,7 +143,7 @@ export default function JDMatchPage() {
           </Card>
 
           {result && (
-            <Card>
+            <Card className="bg-background/88 backdrop-blur border-border/70">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-base">
                   <CheckCircle className="h-5 w-5 text-green-500" />
@@ -149,7 +163,7 @@ export default function JDMatchPage() {
           )}
 
           {result && (
-            <Card>
+            <Card className="bg-background/88 backdrop-blur border-border/70">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-base">
                   <AlertTriangle className="h-5 w-5 text-amber-500" />
@@ -169,7 +183,7 @@ export default function JDMatchPage() {
           )}
         </div>
 
-        <Card className="lg:col-span-1 h-fit">
+        <Card className="lg:col-span-1 h-fit bg-background/88 backdrop-blur border-border/70">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <ThumbsUp className="h-5 w-5 text-primary" />
@@ -202,6 +216,7 @@ export default function JDMatchPage() {
             )}
           </CardContent>
         </Card>
+        </div>
       </div>
     </div>
   )

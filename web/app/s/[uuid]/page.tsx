@@ -146,8 +146,8 @@ async function ShareReadOnlyContent({
 
   if (error) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-muted/10 p-4">
-        <div className="text-center space-y-4">
+      <div className="atelier-app-bg atelier-grid-bg flex min-h-screen items-center justify-center p-4">
+        <div className="text-center space-y-4 atelier-panel p-8 max-w-md">
           <h1 className="text-2xl font-bold text-destructive">Error Loading Resume</h1>
           <p className="text-muted-foreground">{error}</p>
         </div>
@@ -166,7 +166,7 @@ async function ShareReadOnlyContent({
   })
 
   return (
-    <main className="min-h-screen bg-muted/10 py-8 px-4 print:p-0 print:bg-white">
+    <main className="min-h-screen atelier-app-bg atelier-grid-bg py-8 px-4 print:p-0 print:bg-white">
       <div className="max-w-[210mm] mx-auto space-y-6">
         <SharePageActions />
 
@@ -188,7 +188,7 @@ export default function ShareReadOnlyPage({
   searchParams: Promise<{ password?: string | string[] }>
 }) {
   return (
-    <Suspense fallback={<div className="flex min-h-screen items-center justify-center">Loading...</div>}>
+    <Suspense fallback={<div className="atelier-loading">Loading...</div>}>
       <ShareReadOnlyContent params={params} searchParams={searchParams} />
     </Suspense>
   )

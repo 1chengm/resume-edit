@@ -122,7 +122,7 @@ export default function ProfileClient({ initialEmail }: ProfileClientProps) {
   }, [])
 
   if (loading) return (
-    <div className="flex h-screen items-center justify-center">
+    <div className="atelier-loading">
       <Loader2 className="h-8 w-8 animate-spin text-primary" />
     </div>
   )
@@ -130,9 +130,9 @@ export default function ProfileClient({ initialEmail }: ProfileClientProps) {
   const avatar = profile.avatar_url || 'https://lh3.googleusercontent.com/aida-public/AB6AXuDpyfmYUTzn8XOHsr_t_173DsAAeMwAd6f2OomhVfHg4SPduu6DNreTVkamlbAKLIZMTmNgiqWla-gkkkWqdvpG6HGLcMhvWrBWQxhoVXKyr1V60xMA1_E4csa7CGV8VCpXIFVoMoyFeYIMB_6jqHb7eyxF3LBrthfrO8i0at_H41ngVFwXCiKGtZ0KuB-6snleIU8wBFUkxu338U-IVHeJ1FzEUp6RgbIryCXNf0xeNdbYPzh5pKfiyC5DP53n7AA_ddlk4O2tWF8)'
 
   return (
-    <div className="min-h-screen bg-muted/10 flex flex-col md:flex-row">
+    <div className="min-h-screen atelier-app-bg atelier-grid-bg flex flex-col md:flex-row">
       {/* Sidebar */}
-      <aside className="w-full md:w-64 bg-background border-r p-6 flex flex-col gap-8">
+      <aside className="w-full md:w-64 bg-background/85 backdrop-blur border-r border-border/70 p-6 flex flex-col gap-8">
         <div className="flex flex-col gap-4">
           <div className="flex items-center gap-3">
             <div className="relative h-10 w-10 rounded-full overflow-hidden border bg-muted">
@@ -195,7 +195,7 @@ export default function ProfileClient({ initialEmail }: ProfileClientProps) {
             </div>
           </div>
 
-          <Card>
+          <Card className="bg-background/85 backdrop-blur border-border/70">
             <CardHeader>
               <CardTitle>Personal Information</CardTitle>
               <CardDescription>Update your display name and contact details.</CardDescription>
@@ -222,7 +222,7 @@ export default function ProfileClient({ initialEmail }: ProfileClientProps) {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-background/85 backdrop-blur border-border/70">
             <CardHeader>
               <CardTitle>Privacy & Data</CardTitle>
               <CardDescription>Manage your avatar and data privacy settings.</CardDescription>

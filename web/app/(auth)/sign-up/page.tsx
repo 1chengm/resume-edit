@@ -50,9 +50,9 @@ export default function SignUpPage() {
 
 
   return (
-    <div className="w-full min-h-screen grid lg:grid-cols-2">
-      <div className="hidden lg:flex flex-col justify-center items-center bg-muted/30 p-10 relative overflow-hidden">
-        <div className="absolute inset-0 bg-primary/5 z-0"></div>
+    <div className="w-full min-h-screen grid lg:grid-cols-2 atelier-app-bg atelier-grid-bg">
+      <div className="hidden lg:flex flex-col justify-center items-center p-10 relative overflow-hidden border-r border-border/60">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/15 via-transparent to-cyan-400/10 z-0"></div>
         <div className="relative z-10 max-w-lg text-center">
           <div className="flex justify-center mb-8">
             <div className="h-16 w-16 rounded-2xl bg-primary flex items-center justify-center text-primary-foreground shadow-xl">
@@ -66,8 +66,8 @@ export default function SignUpPage() {
         </div>
       </div>
 
-      <div className="flex items-center justify-center p-8 bg-background">
-        <div className="w-full max-w-md space-y-8">
+      <div className="flex items-center justify-center p-8">
+        <div className="w-full max-w-md space-y-8 atelier-panel p-7 md:p-8">
           <div className="text-center lg:text-left">
             <h2 className="text-3xl font-bold tracking-tight">Create an account</h2>
             <p className="text-muted-foreground mt-2">Enter your details below to get started</p>
@@ -102,7 +102,7 @@ export default function SignUpPage() {
             </form>
 
             {(error || message) && (
-              <div className={`p-3 rounded-md text-sm ${error ? 'bg-destructive/10 text-destructive' : 'bg-green-50 text-green-700'}`}>
+              <div className={`p-3 rounded-md text-sm border ${error ? 'bg-destructive/10 border-destructive/20 text-destructive' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-700'}`}>
                 {error || message}
               </div>
             )}

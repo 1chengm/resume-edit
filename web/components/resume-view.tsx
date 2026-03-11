@@ -19,7 +19,7 @@ export function ResumeView({ data }: ResumeViewProps) {
 
     return (
         <div
-            className="bg-white shadow-xl rounded-sm w-[210mm] min-h-[297mm] p-[20mm] mx-auto print:shadow-none print:m-0 print:p-[20mm]"
+            className="bg-white shadow-2xl rounded-xl w-[210mm] min-h-[297mm] p-[20mm] mx-auto print:shadow-none print:m-0 print:p-[20mm] resume-print resume-content"
             style={{ borderTop: `4px solid ${theme}`, boxSizing: 'border-box' }}
         >
             <header className="text-center border-b-2 pb-6 mb-8" style={{ borderColor: theme }}>
@@ -111,7 +111,7 @@ export function ResumeView({ data }: ResumeViewProps) {
                                 <h2 className="text-lg font-bold uppercase tracking-wider mb-3 border-b pb-1" style={{ color: theme, borderColor: '#eee' }}>Skills</h2>
                                 <div className="flex flex-wrap gap-2">
                                     {content.skills?.map((s, i) => (
-                                        <span key={i} className="text-sm bg-gray-100 px-2 py-1 rounded text-gray-700">{s}</span>
+                                        <span key={i} className="text-sm bg-slate-100 px-2 py-1 rounded text-slate-700">{s}</span>
                                     ))}
                                 </div>
                             </section>

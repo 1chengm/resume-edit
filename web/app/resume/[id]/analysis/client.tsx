@@ -417,7 +417,7 @@ export default function AnalysisClient({ resumeId }: AnalysisClientProps) {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-muted/10">
+      <div className="atelier-loading">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
           <p className="text-muted-foreground">正在加载分析数据...</p>
@@ -430,7 +430,7 @@ export default function AnalysisClient({ resumeId }: AnalysisClientProps) {
     const isAuthError = error.includes('登录') || error.includes('authentication')
 
     return (
-      <div className="flex h-screen items-center justify-center bg-muted/10">
+      <div className="atelier-loading">
         <Card className="w-96">
           <CardHeader>
             <CardTitle className="text-destructive">加载失败</CardTitle>
@@ -466,7 +466,7 @@ export default function AnalysisClient({ resumeId }: AnalysisClientProps) {
 
   if (!resume || !analysis) {
     return (
-      <div className="flex h-screen items-center justify-center bg-muted/10">
+      <div className="atelier-loading">
         <Card className="w-96">
           <CardHeader>
             <CardTitle>数据加载失败</CardTitle>
@@ -483,8 +483,8 @@ export default function AnalysisClient({ resumeId }: AnalysisClientProps) {
   }
 
   return (
-    <div className="min-h-screen bg-muted/10">
-      <header className="h-16 border-b bg-background/80 backdrop-blur-sm flex items-center justify-between px-6 sticky top-0 z-10">
+    <div className="min-h-screen atelier-app-bg atelier-grid-bg">
+      <header className="h-16 atelier-topbar flex items-center justify-between px-6 sticky top-0 z-10">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild>
             <Link href="/dashboard" title="返回仪表盘">
@@ -564,7 +564,7 @@ export default function AnalysisClient({ resumeId }: AnalysisClientProps) {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8" id="analysis-section">
           <aside className="lg:col-span-1 flex flex-col gap-6">
-            <Card>
+            <Card className="bg-background/88 backdrop-blur border-border/70">
               <CardHeader>
                 <CardTitle>总体评分</CardTitle>
               </CardHeader>
@@ -593,7 +593,7 @@ export default function AnalysisClient({ resumeId }: AnalysisClientProps) {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-background/88 backdrop-blur border-border/70">
               <CardHeader>
                 <CardTitle>评分拆解</CardTitle>
               </CardHeader>
@@ -621,7 +621,7 @@ export default function AnalysisClient({ resumeId }: AnalysisClientProps) {
           </aside>
 
           <section className="lg:col-span-2">
-            <Card>
+            <Card className="bg-background/88 backdrop-blur border-border/70">
               <CardHeader>
                 <div className="flex border-b border-border">
                   <Button

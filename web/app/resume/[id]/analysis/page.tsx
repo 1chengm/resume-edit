@@ -18,10 +18,10 @@ async function ResumeAnalysisContent({
 
   return (
     <Suspense fallback={
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="atelier-loading">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">正在加载分析页面...</p>
+          <p className="text-muted-foreground">正在加载分析页面...</p>
         </div>
       </div>
     }>
@@ -37,10 +37,10 @@ export default function ResumeAnalysisPage({
 }) {
   return (
     <Suspense fallback={
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="atelier-loading">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">正在加载分析页面...</p>
+          <p className="text-muted-foreground">正在加载分析页面...</p>
         </div>
       </div>
     }>
@@ -48,3 +48,4 @@ export default function ResumeAnalysisPage({
     </Suspense>
   )
 }
+

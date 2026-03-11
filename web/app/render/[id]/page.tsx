@@ -52,7 +52,7 @@ export default function RenderPage({
   searchParams: Promise<{ secret: string }>
 }) {
   return (
-    <Suspense fallback={<div className="flex min-h-screen items-center justify-center">Loading...</div>}>
+    <Suspense fallback={<div className="atelier-loading">Loading...</div>}>
       <RenderContent params={params} searchParams={searchParams} />
     </Suspense>
   )
