@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { POST } from '@/app/api/resumes/[id]/pdf/route'
 import { requireApiUser } from '@/lib/auth/require-user'
+import { mockUser } from './test-helpers'
 
 vi.mock('@/lib/auth/require-user', () => ({
   requireApiUser: vi.fn(),
@@ -66,7 +67,7 @@ describe('POST /api/resumes/[id]/pdf', () => {
     })
 
     mockedRequireApiUser.mockResolvedValueOnce({
-      user: { id: 'user-a' } as { id: string },
+      user: mockUser('user-a'),
       supabase: supabase as never,
       response: null,
     })
@@ -87,7 +88,7 @@ describe('POST /api/resumes/[id]/pdf', () => {
     })
 
     mockedRequireApiUser.mockResolvedValueOnce({
-      user: { id: 'user-a' } as { id: string },
+      user: mockUser('user-a'),
       supabase: supabase as never,
       response: null,
     })
@@ -108,7 +109,7 @@ describe('POST /api/resumes/[id]/pdf', () => {
     })
 
     mockedRequireApiUser.mockResolvedValueOnce({
-      user: { id: 'user-z' } as { id: string },
+      user: mockUser('user-z'),
       supabase: supabase as never,
       response: null,
     })

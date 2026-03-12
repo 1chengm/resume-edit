@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { POST } from '@/app/api/share/route'
 import { requireApiUser } from '@/lib/auth/require-user'
 import { revalidateTag } from 'next/cache'
+import { mockUser } from './test-helpers'
 
 vi.mock('@/lib/auth/require-user', () => ({
   requireApiUser: vi.fn(),
@@ -83,7 +84,7 @@ describe('POST /api/share', () => {
     })
 
     mockedRequireApiUser.mockResolvedValueOnce({
-      user: { id: 'user-2' } as { id: string },
+      user: mockUser('user-2'),
       supabase: supabase as never,
       response: null,
     })

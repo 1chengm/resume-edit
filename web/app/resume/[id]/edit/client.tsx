@@ -1,102 +1,137 @@
 'use client'
-import { useState, useRef, useEffect } from 'react'
-import { renderMarkdown } from '@/lib/markdown'
+
+import { useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
+import { useParams, useSearchParams } from 'next/navigation'
 import { authenticatedFetch } from '@/lib/authenticatedFetch'
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Card } from "@/components/ui/card"
+import { ResumeView } from '@/components/resume-view'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Card } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
 import {
   ArrowLeft,
-  Download,
-  Share2,
-  Save,
-  Plus,
-  Trash2,
+  Award,
   Bold,
+  Briefcase,
+  Copy,
+  Download,
+  ExternalLink,
+  Eye,
+  FileText,
+  FolderGit2,
+  GraduationCap,
   Italic,
   List,
-  ZoomIn,
-  ZoomOut,
+  Plus,
+  Save,
+  Share2,
+  Sparkles,
+  Trash2,
   User,
-  FileText,
-  GraduationCap,
-  Briefcase,
-  FolderGit2,
   Wrench,
-  Award,
-  Copy,
-  ExternalLink,
-  X
-} from "lucide-react"
-import Link from "next/link"
-import { cn } from "@/lib/utils"
+  X,
+} from 'lucide-react'
+
+type EducationItem = { school: string; degree: string; year: string }
+type ExperienceItem = { company: string; role: string; from: string; to: string; highlights: string }
+type ProjectItem = { name: string; description: string; highlights: string }
+type SectionKey = 'personal' | 'summary' | 'experience' | 'projects' | 'education' | 'skills'
+
+const sections: Array<{ key: SectionKey; label: string }> = [
+  { key: 'personal', label: '基本信息' },
+  { key: 'summary', label: '职业摘要' },
+  { key: 'experience', label: '工作经历' },
+  { key: 'projects', label: '项目经历' },
+  { key: 'education', label: '教育经历' },
+  { key: 'skills', label: '技能证书' },
+]
+
+const splitLines = (value: string) => value.split('\n').map((item) => item.trim()).filter(Boolean)
 
 export default function ResumeEditPage() {
-  const [form, setForm] = useState({
-    fullName: '',
-    title: '',
-    phone: '',
-    email: '',
-    linkedin: '',
-    portfolio: '',
-    summary: ''
-  })
+  const params = useParams()
+  const searchParams = useSearchParams()
+  const id = params?.id as string
+  const summaryRef = useRef<HTMLTextAreaElement>(null)
+  const [form, setForm] = useState({ fullName: '', title: '', phone: '', email: '', linkedin: '', portfolio: '', summary: '' })
   const [template, setTemplate] = useState('Modern')
   const [color] = useState('#0d0d0d')
-  const [education, setEducation] = useState<Array<{ school: string; degree: string; year: string }>>([])
-  const [experience, setExperience] = useState<Array<{ company: string; role: string; from: string; to: string; highlights: string }>>([])
-  const [projects, setProjects] = useState<Array<{ name: string; description: string; highlights: string }>>([])
+  const [education, setEducation] = useState<EducationItem[]>([])
+  const [experience, setExperience] = useState<ExperienceItem[]>([])
+  const [projects, setProjects] = useState<ProjectItem[]>([])
   const [skills, setSkills] = useState<string[]>([])
   const [certs, setCerts] = useState<string[]>([])
-  const [scale, setScale] = useState(1)
-  const lastSaveRef = useRef<number>(0)
-  const [shareUrl, setShareUrl] = useState('')
   const [savedText, setSavedText] = useState('Unsaved')
-  const previewRef = useRef<HTMLDivElement>(null)
-  const summaryRef = useRef<HTMLTextAreaElement>(null)
   const [dirty, setDirty] = useState(false)
+  const [shareUrl, setShareUrl] = useState('')
+  const [mobilePreview, setMobilePreview] = useState(false)
+  const [hideHint, setHideHint] = useState(false)
+  const lastSaveRef = useRef(0)
 
-  function update<K extends keyof typeof form>(k: K, v: string) {
-    setForm(prev => ({ ...prev, [k]: v }))
+  const update = (key: keyof typeof form, value: string) => {
+    setForm((prev) => ({ ...prev, [key]: value }))
     setDirty(true)
   }
 
-  useEffect(() => {
-    const id = typeof window !== 'undefined' ? location.pathname.split('/')[2] : ''
-    if (!id) return
-      ; (async () => {
-        const res = await authenticatedFetch(`/api/resumes/${id}`)
-        const j = await res.json()
-        if (res.ok && j?.content_json) {
-          const p = j.content_json.personal || {}
-          setForm({
-            fullName: p.full_name || '',
-            title: p.title || '',
-            phone: p.phone || '',
-            email: p.email || '',
-            linkedin: p.linkedin || '',
-            portfolio: p.portfolio || '',
-            summary: j.content_json.summary || ''
-          })
-          setEducation((j.content_json.education || []).map((e: { school?: string; degree?: string; year?: string }) => ({ school: e.school || '', degree: e.degree || '', year: e.year || '' })))
-          setExperience((j.content_json.experience || []).map((e: { company?: string; role?: string; from?: string; to?: string; highlights?: string[] }) => ({ company: e.company || '', role: e.role || '', from: e.from || '', to: e.to || '', highlights: (e.highlights || []).join('\n') })))
-          setProjects((j.content_json.projects || []).map((e: { name?: string; description?: string; highlights?: string[] }) => ({ name: e.name || '', description: e.description || '', highlights: (e.highlights || []).join('\n') })))
-          setSkills(j.content_json.skills || [])
-          setCerts(j.content_json.certificates || [])
-          setDirty(false)
-          setSavedText('Saved')
-        }
-      })()
-  }, [])
+  const scrollTo = (section: SectionKey) => document.getElementById(`section-${section}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 
-  useEffect(() => { void lastSaveRef.current }, [])
+  useEffect(() => {
+    async function load() {
+      const res = await authenticatedFetch(`/api/resumes/${id}`)
+      const data = await res.json()
+      if (!res.ok || !data?.content_json) return
+      const personal = data.content_json.personal || {}
+      setForm({
+        fullName: personal.full_name || '',
+        title: personal.title || '',
+        phone: personal.phone || '',
+        email: personal.email || '',
+        linkedin: personal.linkedin || '',
+        portfolio: personal.portfolio || '',
+        summary: data.content_json.summary || '',
+      })
+      setEducation((data.content_json.education || []).map((item: EducationItem) => ({ school: item.school || '', degree: item.degree || '', year: item.year || '' })))
+      setExperience((data.content_json.experience || []).map((item: { company?: string; role?: string; from?: string; to?: string; highlights?: string[] }) => ({
+        company: item.company || '', role: item.role || '', from: item.from || '', to: item.to || '', highlights: (item.highlights || []).join('\n'),
+      })))
+      setProjects((data.content_json.projects || []).map((item: { name?: string; description?: string; highlights?: string[] }) => ({
+        name: item.name || '', description: item.description || '', highlights: (item.highlights || []).join('\n'),
+      })))
+      setSkills(data.content_json.skills || [])
+      setCerts(data.content_json.certificates || [])
+      setTemplate(data.template || 'Modern')
+      setSavedText('Saved')
+      setDirty(false)
+    }
+    if (id) void load()
+  }, [id])
+
+  useEffect(() => {
+    const requested = searchParams.get('section') as SectionKey | null
+    if (requested) window.setTimeout(() => scrollTo(requested), 250)
+  }, [searchParams])
 
   async function save(): Promise<boolean> {
-    const id = typeof window !== 'undefined' ? location.pathname.split('/')[2] : ''
-    const payload = { content_json: { personal: { full_name: form.fullName, title: form.title, phone: form.phone, email: form.email, linkedin: form.linkedin, portfolio: form.portfolio }, summary: form.summary, education, experience: experience.map(e => ({ ...e, highlights: e.highlights.split('\n').filter(Boolean) })), projects: projects.map(p => ({ ...p, highlights: p.highlights.split('\n').filter(Boolean) })), skills, certificates: certs }, title: form.fullName ? `${form.fullName} Resume` : undefined, template, color_theme: color }
+    const payload = {
+      content_json: {
+        personal: { full_name: form.fullName, title: form.title, phone: form.phone, email: form.email, linkedin: form.linkedin, portfolio: form.portfolio },
+        summary: form.summary,
+        education,
+        experience: experience.map((item) => ({ ...item, highlights: splitLines(item.highlights) })),
+        projects: projects.map((item) => ({ ...item, highlights: splitLines(item.highlights) })),
+        skills,
+        certificates: certs,
+      },
+      title: form.fullName ? `${form.fullName} Resume` : undefined,
+      template,
+      color_theme: color,
+    }
     const res = await authenticatedFetch(`/api/resumes/${id}`, { method: 'PATCH', body: JSON.stringify(payload) })
-    if (res.ok) { setSavedText('Saved'); setDirty(false); try { localStorage.removeItem(`resume_draft_${id}`) } catch { }; return true } else { setSavedText('Save Failed'); try { localStorage.setItem(`resume_draft_${id}`, JSON.stringify(payload)) } catch { }; return false }
+    if (res.ok) { setSavedText('Saved'); setDirty(false); return true }
+    setSavedText('Save Failed')
+    return false
   }
 
   async function saveWithRetry() {
@@ -104,553 +139,296 @@ export default function ResumeEditPage() {
     if (now - lastSaveRef.current < 300) return
     lastSaveRef.current = now
     setSavedText('Saving...')
-    let attempt = 0
-    while (attempt < 3) {
-      const before = Date.now()
-      const ok = await save()
-      if (ok) break
-      attempt++
-      const backoff = 250 * Math.pow(2, attempt - 1)
-      await new Promise(r => setTimeout(r, backoff))
-      if (Date.now() - before < backoff) await new Promise(r => setTimeout(r, backoff - (Date.now() - before)))
-    }
-  }
-
-  async function generatePDF() {
-    const id = typeof window !== 'undefined' ? location.pathname.split('/')[2] : ''
-    if (!id) {
-      alert('Missing Resume ID')
-      return
-    }
-    window.print();
-
-    try {
-      await authenticatedFetch('/api/stats', {
-        method: 'POST',
-        body: JSON.stringify({ type: 'pdf_download', resume_id: id })
-      })
-    } catch (error) {
-      console.error('Failed to record PDF download stat:', error)
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      if (await save()) return
+      await new Promise((resolve) => setTimeout(resolve, 250 * Math.pow(2, attempt)))
     }
   }
 
   async function createShare() {
-    const id = typeof window !== 'undefined' ? location.pathname.split('/')[2] : ''
     const res = await authenticatedFetch('/api/share', { method: 'POST', body: JSON.stringify({ permission: 'public', resume_id: id }) })
-    const raw = await res.text()
-    let data: { share_uuid?: string; error?: string } = {}
-    if (raw) {
-      try {
-        data = JSON.parse(raw)
-      } catch {
-        data = {}
-      }
-    }
-    if (!res.ok || !data?.share_uuid) {
-      alert(data?.error || 'Create share link failed')
-      return
-    }
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok || !data?.share_uuid) { setSavedText(data.error || 'Share Failed'); return }
     setShareUrl(`${location.origin}/s/${data.share_uuid}`)
   }
 
+  function wrapSelection(wrapper: string) {
+    const element = summaryRef.current
+    if (!element) return
+    const { selectionStart, selectionEnd, value } = element
+    update('summary', value.slice(0, selectionStart) + wrapper + value.slice(selectionStart, selectionEnd) + wrapper + value.slice(selectionEnd))
+  }
+
+  const previewData = {
+    resume: { color_theme: color, template },
+    content: {
+      content_json: {
+        personal: { full_name: form.fullName, title: form.title, phone: form.phone, email: form.email, linkedin: form.linkedin, portfolio: form.portfolio },
+        summary: form.summary,
+        education,
+        experience: experience.map((item) => ({ ...item, highlights: splitLines(item.highlights) })),
+        projects: projects.map((item) => ({ ...item, highlights: splitLines(item.highlights) })),
+        skills,
+        certificates: certs,
+      },
+    },
+  }
+
+  const filledSections = [form.fullName || form.title || form.email, form.summary, experience.length, projects.length, education.length, skills.length + certs.length].filter(Boolean).length
+  const routeHint = hideHint ? '' : searchParams.get('hint') || ''
+
   return (
-    <div className="flex flex-col h-screen atelier-app-bg atelier-grid-bg">
-      {/* Header */}
-      <header className="h-16 atelier-topbar flex items-center justify-between px-4 lg:px-6 sticky top-0 z-20 shadow-sm no-print">
-        <div className="flex items-center gap-4">
-          <Link href="/dashboard">
-            <Button variant="ghost" size="icon" className="rounded-full" aria-label="Back to dashboard">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          </Link>
-          <div className="flex flex-col">
-            <h2 className="text-lg font-bold leading-tight">Resume Editor</h2>
-            <span className={cn("text-xs font-medium inline-flex items-center gap-1.5", dirty ? "text-amber-700" : "text-emerald-700")}>
-              <span className={cn("h-1.5 w-1.5 rounded-full", dirty ? "bg-amber-500" : "bg-emerald-500")} aria-hidden="true" />
-              {dirty ? "Unsaved changes" : savedText}
-            </span>
+    <div className="min-h-screen atelier-app-bg atelier-grid-bg">
+      <header className="atelier-topbar sticky top-0 z-30 flex min-h-16 items-center justify-between gap-3 px-4 py-3 md:px-6 no-print">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" asChild><Link href="/dashboard"><ArrowLeft className="h-5 w-5" /></Link></Button>
+          <div>
+            <h1 className="text-lg font-semibold">Resume Editor</h1>
+            <p className={cn('text-xs font-medium', dirty ? 'text-amber-700' : 'text-emerald-700')}>{dirty ? 'Unsaved changes' : savedText}</p>
           </div>
         </div>
-
-        <div className="flex items-center gap-3">
-          <div className="hidden md:flex items-center gap-2 bg-muted/50 p-1 rounded-lg">
-            <Button
-              variant={template === 'Modern' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => setTemplate('Modern')}
-              className="h-8 text-xs"
-            >
-              Modern
-            </Button>
-            <Button
-              variant={template === 'Classic' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => setTemplate('Classic')}
-              className="h-8 text-xs"
-            >
-              Classic
-            </Button>
-            <Button
-              variant={template === 'Creative' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => setTemplate('Creative')}
-              className="h-8 text-xs"
-            >
-              Creative
-            </Button>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <div className="hidden rounded-xl border bg-background/90 p-1 md:flex">
+            {['Modern', 'Classic', 'Creative'].map((option) => (
+              <Button key={option} variant={template === option ? 'secondary' : 'ghost'} size="sm" onClick={() => { setTemplate(option); setDirty(true) }}>{option}</Button>
+            ))}
           </div>
-
-          <div className="h-6 w-px bg-border mx-2 hidden md:block"></div>
-
-          <div className="flex items-center rounded-xl border bg-background/90 p-1 shadow-sm">
-            <Button variant="ghost" size="sm" onClick={saveWithRetry} className="gap-2 h-8 px-3 rounded-md" aria-label="Save resume">
-              <Save className="h-4 w-4" />
-              <span className="hidden sm:inline">Save</span>
-            </Button>
-            <Button variant="ghost" size="sm" onClick={createShare} className="gap-2 h-8 px-3 rounded-md" aria-label="Create share link">
-              <Share2 className="h-4 w-4" />
-              <span className="hidden sm:inline">Share</span>
-            </Button>
-            <Button variant="ghost" size="sm" onClick={generatePDF} className="gap-2 h-8 px-3 rounded-md" aria-label="Export resume as PDF">
-              <Download className="h-4 w-4" />
-              <span className="hidden sm:inline">Export PDF</span>
-            </Button>
-          </div>
+          <Button variant="outline" size="sm" asChild className="hidden lg:inline-flex"><Link href={`/resume/${id}/analysis`}><Sparkles className="mr-2 h-4 w-4" />AI Analysis</Link></Button>
+          <Button variant="outline" size="sm" onClick={() => setMobilePreview(true)} className="lg:hidden"><Eye className="mr-2 h-4 w-4" />预览</Button>
+          <Button variant="ghost" size="sm" onClick={saveWithRetry}><Save className="mr-2 h-4 w-4" />保存</Button>
+          <Button variant="ghost" size="sm" onClick={createShare}><Share2 className="mr-2 h-4 w-4" />分享</Button>
+          <Button variant="ghost" size="sm" onClick={() => window.print()}><Download className="mr-2 h-4 w-4" />导出</Button>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="flex-grow flex overflow-hidden">
-        {/* Editor Panel */}
-        <section className="w-full lg:w-1/2 xl:w-[46%] 2xl:w-[44%] bg-background border-r overflow-y-auto p-6 space-y-6 no-print">
-
-          {/* Personal Info */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 text-lg font-semibold text-primary">
-              <User className="h-5 w-5" />
-              <h3>Personal Information</h3>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-muted-foreground">Full Name</label>
-                <Input value={form.fullName} onChange={e => update('fullName', e.target.value)} placeholder="John Doe" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-muted-foreground">Job Title</label>
-                <Input value={form.title} onChange={e => update('title', e.target.value)} placeholder="Software Engineer" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-muted-foreground">Phone</label>
-                <Input value={form.phone} onChange={e => update('phone', e.target.value)} placeholder="+1 234 567 890" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-muted-foreground">Email</label>
-                <Input value={form.email} onChange={e => update('email', e.target.value)} placeholder="john@example.com" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-muted-foreground">LinkedIn</label>
-                <Input value={form.linkedin} onChange={e => update('linkedin', e.target.value)} placeholder="linkedin.com/in/johndoe" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-muted-foreground">Portfolio</label>
-                <Input value={form.portfolio} onChange={e => update('portfolio', e.target.value)} placeholder="johndoe.com" />
-              </div>
-            </div>
-          </div>
-
-          <div className="h-px bg-border"></div>
-
-          {/* Summary */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-lg font-semibold text-primary">
-                <FileText className="h-5 w-5" />
-                <h3>Professional Summary</h3>
-              </div>
-              <div className="flex gap-1 bg-muted/50 p-1 rounded-md">
-                <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="Bold selection" onClick={() => { const el = summaryRef.current; if (!el) return; const { selectionStart, selectionEnd, value } = el; const selected = value.slice(selectionStart, selectionEnd); const next = value.slice(0, selectionStart) + `**${selected}**` + value.slice(selectionEnd); el.value = next; update('summary', next); el.focus(); const pos = selectionStart + 2 + selected.length + 2; el.selectionStart = el.selectionEnd = pos }}>
-                  <Bold className="h-3 w-3" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="Italic selection" onClick={() => { const el = summaryRef.current; if (!el) return; const { selectionStart, selectionEnd, value } = el; const selected = value.slice(selectionStart, selectionEnd); const next = value.slice(0, selectionStart) + `*${selected}*` + value.slice(selectionEnd); el.value = next; update('summary', next); el.focus(); const pos = selectionStart + 1 + selected.length + 1; el.selectionStart = el.selectionEnd = pos }}>
-                  <Italic className="h-3 w-3" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="Insert bullet point" onClick={() => { const el = summaryRef.current; if (!el) return; const { selectionStart, value } = el; const lineStart = value.lastIndexOf('\n', selectionStart - 1) + 1; const next = value.slice(0, lineStart) + '- ' + value.slice(lineStart); el.value = next; update('summary', next); el.focus(); const pos = selectionStart + 2; el.selectionStart = el.selectionEnd = pos }}>
-                  <List className="h-3 w-3" />
-                </Button>
-              </div>
-            </div>
-            <Textarea
-              ref={summaryRef}
-              value={form.summary}
-              onChange={e => update('summary', e.target.value)}
-              placeholder="Write a brief summary of your professional background..."
-              className="min-h-[120px]"
-            />
-          </div>
-
-          <div className="h-px bg-border"></div>
-
-          {/* Education */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-lg font-semibold text-primary">
-                <GraduationCap className="h-5 w-5" />
-                <h3>Education</h3>
-              </div>
-              <Button variant="outline" size="sm" onClick={() => setEducation(prev => [...prev, { school: '', degree: '', year: '' }])}>
-                <Plus className="h-4 w-4 mr-1" /> Add
-              </Button>
-            </div>
-            <div className="space-y-4">
-              {education.map((e, idx) => (
-                <Card key={idx} className="p-4 relative group">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 text-destructive hover:text-destructive hover:bg-destructive/10 transition-opacity"
-                    onClick={() => setEducation(prev => prev.filter((_, i) => i !== idx))}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pr-8">
-                    <Input placeholder="School / University" value={e.school} onChange={ev => setEducation(prev => prev.map((x, i) => i === idx ? { ...x, school: ev.target.value } : x))} />
-                    <Input placeholder="Degree / Major" value={e.degree} onChange={ev => setEducation(prev => prev.map((x, i) => i === idx ? { ...x, degree: ev.target.value } : x))} />
-                    <Input placeholder="Year / Period" value={e.year} onChange={ev => setEducation(prev => prev.map((x, i) => i === idx ? { ...x, year: ev.target.value } : x))} />
-                  </div>
-                </Card>
+      <main className="mx-auto grid w-full max-w-[1600px] gap-6 p-4 md:p-6 lg:grid-cols-[220px_minmax(0,1fr)_minmax(460px,0.95fr)]">
+        <aside className="hidden lg:block no-print">
+          <div className="sticky top-24 space-y-4">
+            <Card className="atelier-panel p-4">
+              <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">Progress</p>
+              <p className="mt-2 text-3xl font-semibold">{filledSections}/6</p>
+              <p className="mt-1 text-sm text-muted-foreground">个模块已进入可投递状态</p>
+            </Card>
+            <Card className="atelier-panel p-3">
+              {sections.map((section) => (
+                <button key={section.key} type="button" className="flex w-full items-center justify-between rounded-xl px-3 py-3 text-left hover:bg-muted/50" onClick={() => scrollTo(section.key)}>
+                  <span className="text-sm font-medium">{section.label}</span>
+                  <span className="text-xs text-muted-foreground">跳转</span>
+                </button>
               ))}
-              {education.length === 0 && (
-                <div className="text-center p-4 border border-dashed rounded-lg text-muted-foreground text-sm">
-                  No education added yet.
+            </Card>
+          </div>
+        </aside>
+
+        <section className="space-y-6 no-print">
+          <Card className="atelier-panel p-5">
+            <h2 className="text-2xl font-semibold">边编辑，边看最终版式</h2>
+            <p className="mt-2 text-sm text-muted-foreground">模板切换现在会直接影响右侧实时预览和导出结果。分析页与 JD Match 会回跳到对应模块。</p>
+            <div className="mt-4 flex flex-wrap gap-2 lg:hidden">
+              {sections.map((section) => <Button key={section.key} variant="outline" size="sm" onClick={() => scrollTo(section.key)}>{section.label}</Button>)}
+            </div>
+          </Card>
+
+          {routeHint && (
+            <Card className="border-primary/25 bg-primary/5 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-primary">AI Focus</p>
+                  <p className="mt-2 text-sm leading-6">{routeHint}</p>
                 </div>
-              )}
-            </div>
-          </div>
-
-          <div className="h-px bg-border"></div>
-
-          {/* Experience */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-lg font-semibold text-primary">
-                <Briefcase className="h-5 w-5" />
-                <h3>Experience</h3>
+                <Button variant="ghost" size="icon" onClick={() => setHideHint(true)}><X className="h-4 w-4" /></Button>
               </div>
-              <Button variant="outline" size="sm" onClick={() => setExperience(prev => [...prev, { company: '', role: '', from: '', to: '', highlights: '' }])}>
-                <Plus className="h-4 w-4 mr-1" /> Add
-              </Button>
+            </Card>
+          )}
+
+          <Card id="section-personal" className="atelier-panel p-6">
+            <SectionHeader icon={User} title="基本信息" subtitle="抬头的可信度决定简历是否被继续读下去。" />
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <Field label="Full Name"><Input value={form.fullName} onChange={(event) => update('fullName', event.target.value)} /></Field>
+              <Field label="Job Title"><Input value={form.title} onChange={(event) => update('title', event.target.value)} /></Field>
+              <Field label="Phone"><Input value={form.phone} onChange={(event) => update('phone', event.target.value)} /></Field>
+              <Field label="Email"><Input value={form.email} onChange={(event) => update('email', event.target.value)} /></Field>
+              <Field label="LinkedIn"><Input value={form.linkedin} onChange={(event) => update('linkedin', event.target.value)} /></Field>
+              <Field label="Portfolio"><Input value={form.portfolio} onChange={(event) => update('portfolio', event.target.value)} /></Field>
             </div>
-            <div className="space-y-4">
-              {experience.map((e, idx) => (
-                <Card key={idx} className="p-4 relative group space-y-3">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 text-destructive hover:text-destructive hover:bg-destructive/10 transition-opacity"
-                    onClick={() => setExperience(prev => prev.filter((_, i) => i !== idx))}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pr-8">
-                    <Input placeholder="Company" value={e.company} onChange={ev => setExperience(prev => prev.map((x, i) => i === idx ? { ...x, company: ev.target.value } : x))} />
-                    <Input placeholder="Role / Title" value={e.role} onChange={ev => setExperience(prev => prev.map((x, i) => i === idx ? { ...x, role: ev.target.value } : x))} />
-                    <Input placeholder="Start Date" value={e.from} onChange={ev => setExperience(prev => prev.map((x, i) => i === idx ? { ...x, from: ev.target.value } : x))} />
-                    <Input placeholder="End Date" value={e.to} onChange={ev => setExperience(prev => prev.map((x, i) => i === idx ? { ...x, to: ev.target.value } : x))} />
-                  </div>
-                  <Textarea
-                    placeholder="Key achievements and responsibilities (one per line)"
-                    value={e.highlights}
-                    onChange={ev => setExperience(prev => prev.map((x, i) => i === idx ? { ...x, highlights: ev.target.value } : x))}
-                    className="min-h-[100px]"
-                  />
-                </Card>
-              ))}
-              {experience.length === 0 && (
-                <div className="text-center p-4 border border-dashed rounded-lg text-muted-foreground text-sm">
-                  No experience added yet.
+          </Card>
+
+          <Card id="section-summary" className="atelier-panel p-6">
+            <div className="mb-5 flex items-start justify-between gap-3">
+              <SectionHeader icon={FileText} title="职业摘要" subtitle="先写定位，再写经验与结果，避免空泛自我评价。" />
+              <div className="flex gap-1 rounded-lg bg-muted/60 p-1">
+                <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => wrapSelection('**')}><Bold className="h-3.5 w-3.5" /></Button>
+                <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => wrapSelection('*')}><Italic className="h-3.5 w-3.5" /></Button>
+                <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => update('summary', `${form.summary}${form.summary.endsWith('\n') || !form.summary ? '' : '\n'}- `)}><List className="h-3.5 w-3.5" /></Button>
+              </div>
+            </div>
+            <Textarea ref={summaryRef} value={form.summary} onChange={(event) => update('summary', event.target.value)} className="min-h-[180px] bg-background/80 leading-6" />
+          </Card>
+
+          <StackCard id="section-experience" icon={Briefcase} title="工作经历" subtitle="多写结果，少写职责。">
+            {experience.map((item, index) => (
+              <ItemCard key={index} title={`经历 ${index + 1}`} onRemove={() => { setExperience((prev) => prev.filter((_, i) => i !== index)); setDirty(true) }}>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <Input placeholder="Company" value={item.company} onChange={(event) => { setExperience((prev) => prev.map((row, i) => i === index ? { ...row, company: event.target.value } : row)); setDirty(true) }} />
+                  <Input placeholder="Role" value={item.role} onChange={(event) => { setExperience((prev) => prev.map((row, i) => i === index ? { ...row, role: event.target.value } : row)); setDirty(true) }} />
+                  <Input placeholder="Start Date" value={item.from} onChange={(event) => { setExperience((prev) => prev.map((row, i) => i === index ? { ...row, from: event.target.value } : row)); setDirty(true) }} />
+                  <Input placeholder="End Date" value={item.to} onChange={(event) => { setExperience((prev) => prev.map((row, i) => i === index ? { ...row, to: event.target.value } : row)); setDirty(true) }} />
                 </div>
-              )}
-            </div>
-          </div>
+                <Textarea className="mt-3 min-h-[120px]" value={item.highlights} onChange={(event) => { setExperience((prev) => prev.map((row, i) => i === index ? { ...row, highlights: event.target.value } : row)); setDirty(true) }} />
+              </ItemCard>
+            ))}
+            <Button variant="outline" onClick={() => { setExperience((prev) => [...prev, { company: '', role: '', from: '', to: '', highlights: '' }]); setDirty(true) }}><Plus className="mr-2 h-4 w-4" />添加经历</Button>
+            {experience.length === 0 && <EmptyState text="至少补充 1 段真实经历，AI 分析和 JD Match 才有判断基础。" />}
+          </StackCard>
 
-          <div className="h-px bg-border"></div>
-
-          {/* Projects */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-lg font-semibold text-primary">
-                <FolderGit2 className="h-5 w-5" />
-                <h3>Projects</h3>
-              </div>
-              <Button variant="outline" size="sm" onClick={() => setProjects(prev => [...prev, { name: '', description: '', highlights: '' }])}>
-                <Plus className="h-4 w-4 mr-1" /> Add
-              </Button>
-            </div>
-            <div className="space-y-4">
-              {projects.map((p, idx) => (
-                <Card key={idx} className="p-4 relative group space-y-3">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 text-destructive hover:text-destructive hover:bg-destructive/10 transition-opacity"
-                    onClick={() => setProjects(prev => prev.filter((_, i) => i !== idx))}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pr-8">
-                    <Input placeholder="Project Name" value={p.name} onChange={ev => setProjects(prev => prev.map((x, i) => i === idx ? { ...x, name: ev.target.value } : x))} />
-                    <Input placeholder="Short Description" value={p.description} onChange={ev => setProjects(prev => prev.map((x, i) => i === idx ? { ...x, description: ev.target.value } : x))} />
-                  </div>
-                  <Textarea
-                    placeholder="Key features and tech stack (one per line)"
-                    value={p.highlights}
-                    onChange={ev => setProjects(prev => prev.map((x, i) => i === idx ? { ...x, highlights: ev.target.value } : x))}
-                    className="min-h-[100px]"
-                  />
-                </Card>
-              ))}
-              {projects.length === 0 && (
-                <div className="text-center p-4 border border-dashed rounded-lg text-muted-foreground text-sm">
-                  No projects added yet.
+          <StackCard id="section-projects" icon={FolderGit2} title="项目经历" subtitle="突出代表性成果和技术栈。">
+            {projects.map((item, index) => (
+              <ItemCard key={index} title={`项目 ${index + 1}`} onRemove={() => { setProjects((prev) => prev.filter((_, i) => i !== index)); setDirty(true) }}>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <Input placeholder="Project Name" value={item.name} onChange={(event) => { setProjects((prev) => prev.map((row, i) => i === index ? { ...row, name: event.target.value } : row)); setDirty(true) }} />
+                  <Input placeholder="Short Description" value={item.description} onChange={(event) => { setProjects((prev) => prev.map((row, i) => i === index ? { ...row, description: event.target.value } : row)); setDirty(true) }} />
                 </div>
-              )}
-            </div>
-          </div>
+                <Textarea className="mt-3 min-h-[120px]" value={item.highlights} onChange={(event) => { setProjects((prev) => prev.map((row, i) => i === index ? { ...row, highlights: event.target.value } : row)); setDirty(true) }} />
+              </ItemCard>
+            ))}
+            <Button variant="outline" onClick={() => { setProjects((prev) => [...prev, { name: '', description: '', highlights: '' }]); setDirty(true) }}><Plus className="mr-2 h-4 w-4" />添加项目</Button>
+            {projects.length === 0 && <EmptyState text="适合补足作品、技术、跨团队协作和业务影响。" />}
+          </StackCard>
 
-          <div className="h-px bg-border"></div>
+          <StackCard id="section-education" icon={GraduationCap} title="教育经历" subtitle="保持时间线清晰。">
+            {education.map((item, index) => (
+              <ItemCard key={index} title={`教育 ${index + 1}`} onRemove={() => { setEducation((prev) => prev.filter((_, i) => i !== index)); setDirty(true) }}>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                  <Input placeholder="School" value={item.school} onChange={(event) => { setEducation((prev) => prev.map((row, i) => i === index ? { ...row, school: event.target.value } : row)); setDirty(true) }} />
+                  <Input placeholder="Degree" value={item.degree} onChange={(event) => { setEducation((prev) => prev.map((row, i) => i === index ? { ...row, degree: event.target.value } : row)); setDirty(true) }} />
+                  <Input placeholder="Year" value={item.year} onChange={(event) => { setEducation((prev) => prev.map((row, i) => i === index ? { ...row, year: event.target.value } : row)); setDirty(true) }} />
+                </div>
+              </ItemCard>
+            ))}
+            <Button variant="outline" onClick={() => { setEducation((prev) => [...prev, { school: '', degree: '', year: '' }]); setDirty(true) }}><Plus className="mr-2 h-4 w-4" />添加教育</Button>
+            {education.length === 0 && <EmptyState text="建议至少保留一条学历信息。" />}
+          </StackCard>
 
-          {/* Skills & Certs */}
-          <div className="grid grid-cols-1 gap-6">
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-lg font-semibold text-primary">
-                <Wrench className="h-5 w-5" />
-                <h3>Skills</h3>
+          <Card id="section-skills" className="atelier-panel p-6">
+            <SectionHeader icon={Wrench} title="技能与证书" subtitle="关键词命中率与可信证明。" />
+            <div className="grid gap-6 lg:grid-cols-2">
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 font-medium"><Wrench className="h-4 w-4 text-primary" />Skills</div>
+                <Input placeholder="输入技能后按 Enter" onKeyDown={(event) => {
+                  if (event.key !== 'Enter') return
+                  event.preventDefault()
+                  const value = (event.target as HTMLInputElement).value.trim()
+                  if (!value) return
+                  setSkills((prev) => [...prev, value]); (event.target as HTMLInputElement).value = ''; setDirty(true)
+                }} />
+                <TagList items={skills} onRemove={(index) => { setSkills((prev) => prev.filter((_, i) => i !== index)); setDirty(true) }} />
               </div>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Add a skill and press Enter"
-                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); const v = (e.target as HTMLInputElement).value.trim(); if (v) { setSkills(prev => [...prev, v]); (e.target as HTMLInputElement).value = ''; } } }}
-                />
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {skills.map((s, i) => (
-                  <span key={i} className="bg-secondary text-secondary-foreground text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1">
-                    {s}
-                    <button onClick={() => setSkills(prev => prev.filter((_, idx) => idx !== i))} className="hover:text-destructive ml-1">×</button>
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-lg font-semibold text-primary">
-                <Award className="h-5 w-5" />
-                <h3>Certificates</h3>
-              </div>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Add a certificate and press Enter"
-                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); const v = (e.target as HTMLInputElement).value.trim(); if (v) { setCerts(prev => [...prev, v]); (e.target as HTMLInputElement).value = ''; } } }}
-                />
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {certs.map((s, i) => (
-                  <span key={i} className="bg-secondary text-secondary-foreground text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1">
-                    {s}
-                    <button onClick={() => setCerts(prev => prev.filter((_, idx) => idx !== i))} className="hover:text-destructive ml-1">×</button>
-                  </span>
-                ))}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 font-medium"><Award className="h-4 w-4 text-primary" />Certificates</div>
+                <Input placeholder="输入证书后按 Enter" onKeyDown={(event) => {
+                  if (event.key !== 'Enter') return
+                  event.preventDefault()
+                  const value = (event.target as HTMLInputElement).value.trim()
+                  if (!value) return
+                  setCerts((prev) => [...prev, value]); (event.target as HTMLInputElement).value = ''; setDirty(true)
+                }} />
+                <TagList items={certs} onRemove={(index) => { setCerts((prev) => prev.filter((_, i) => i !== index)); setDirty(true) }} />
               </div>
             </div>
-          </div>
-
+          </Card>
         </section>
 
-        {/* Preview Panel */}
-        <section className="hidden lg:flex flex-1 bg-muted/30 p-8 items-start justify-center overflow-y-auto relative print-visible">
-          <div className="fixed bottom-8 right-8 flex flex-col gap-2 z-30 no-print">
-            <Button variant="secondary" size="icon" onClick={() => setScale(prev => Math.min(1.5, +(prev + 0.1).toFixed(2)))} title="Zoom In" aria-label="Zoom in preview">
-              <ZoomIn className="h-4 w-4" />
-            </Button>
-            <div className="bg-background text-xs font-medium py-1 px-2 rounded-md shadow text-center border">
-              {Math.round(scale * 100)}%
-            </div>
-            <Button variant="secondary" size="icon" onClick={() => setScale(prev => Math.max(0.5, +(prev - 0.1).toFixed(2)))} title="Zoom Out" aria-label="Zoom out preview">
-              <ZoomOut className="h-4 w-4" />
-            </Button>
-          </div>
-
-          <div
-            ref={previewRef}
-            className="bg-white shadow-2xl transition-transform duration-200 origin-top resume-print"
-            style={{
-              width: '210mm',
-              minHeight: '297mm',
-              padding: '40px',
-              transform: `scale(${scale})`,
-              marginBottom: `${(scale - 1) * 297}mm` // Add margin to allow scrolling when scaled up
-            }}
-          >
-            {/* Resume Content - Basic Modern Template Style */}
-            <header className="border-b-2 pb-6 mb-8" style={{ borderColor: color }}>
-              <h1 className="text-4xl font-bold tracking-tight mb-2" style={{ color }}>{form.fullName || 'Your Name'}</h1>
-              <p className="text-xl text-muted-foreground mb-4">{form.title || 'Professional Title'}</p>
-
-              <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
-                {form.phone && <span>{form.phone}</span>}
-                {form.email && <span>{form.email}</span>}
-                {form.linkedin && <span>{form.linkedin}</span>}
-                {form.portfolio && <span>{form.portfolio}</span>}
-              </div>
-            </header>
-
-            <div className="space-y-8">
-              {form.summary && (
-                <section>
-                  <h2 className="text-lg font-bold uppercase tracking-wider mb-3 border-b pb-1" style={{ color, borderColor: '#eee' }}>Professional Summary</h2>
-                  <div className="text-sm leading-relaxed text-gray-700" dangerouslySetInnerHTML={{ __html: renderMarkdown(form.summary) }} />
-                </section>
-              )}
-
-              {experience.length > 0 && (
-                <section>
-                  <h2 className="text-lg font-bold uppercase tracking-wider mb-4 border-b pb-1" style={{ color, borderColor: '#eee' }}>Experience</h2>
-                  <div className="space-y-6">
-                    {experience.map((e, i) => (
-                      <div key={i}>
-                        <div className="flex justify-between items-baseline mb-1">
-                          <h3 className="font-bold text-gray-900">{e.role}</h3>
-                          <span className="text-sm text-gray-500 whitespace-nowrap">{e.from} – {e.to}</span>
-                        </div>
-                        <p className="text-sm font-medium text-gray-700 mb-2">{e.company}</p>
-                        <ul className="list-disc list-outside ml-4 text-sm text-gray-600 space-y-1">
-                          {e.highlights.split('\n').filter(Boolean).map((h, idx) => (
-                            <li key={idx}>{h}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {projects.length > 0 && (
-                <section>
-                  <h2 className="text-lg font-bold uppercase tracking-wider mb-4 border-b pb-1" style={{ color, borderColor: '#eee' }}>Projects</h2>
-                  <div className="space-y-5">
-                    {projects.map((p, i) => (
-                      <div key={i}>
-                        <div className="flex justify-between items-baseline mb-1">
-                          <h3 className="font-bold text-gray-900">{p.name}</h3>
-                        </div>
-                        <p className="text-sm text-gray-700 mb-2 italic">{p.description}</p>
-                        <ul className="list-disc list-outside ml-4 text-sm text-gray-600 space-y-1">
-                          {p.highlights.split('\n').filter(Boolean).map((h, idx) => (
-                            <li key={idx}>{h}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {education.length > 0 && (
-                <section>
-                  <h2 className="text-lg font-bold uppercase tracking-wider mb-4 border-b pb-1" style={{ color, borderColor: '#eee' }}>Education</h2>
-                  <div className="space-y-4">
-                    {education.map((e, i) => (
-                      <div key={i}>
-                        <div className="flex justify-between items-baseline">
-                          <h3 className="font-bold text-gray-900">{e.school}</h3>
-                          <span className="text-sm text-gray-500">{e.year}</span>
-                        </div>
-                        <p className="text-sm text-gray-700">{e.degree}</p>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {(skills.length > 0 || certs.length > 0) && (
-                <div className="grid grid-cols-2 gap-8">
-                  {skills.length > 0 && (
-                    <section>
-                      <h2 className="text-lg font-bold uppercase tracking-wider mb-3 border-b pb-1" style={{ color, borderColor: '#eee' }}>Skills</h2>
-                      <div className="flex flex-wrap gap-2">
-                        {skills.map((s, i) => (
-                          <span key={i} className="text-sm bg-gray-100 px-2 py-1 rounded text-gray-700">{s}</span>
-                        ))}
-                      </div>
-                    </section>
-                  )}
-
-                  {certs.length > 0 && (
-                    <section>
-                      <h2 className="text-lg font-bold uppercase tracking-wider mb-3 border-b pb-1" style={{ color, borderColor: '#eee' }}>Certificates</h2>
-                      <ul className="list-disc list-outside ml-4 text-sm text-gray-600 space-y-1">
-                        {certs.map((c, i) => (
-                          <li key={i}>{c}</li>
-                        ))}
-                      </ul>
-                    </section>
-                  )}
+        <section className="hidden lg:block">
+          <div className="sticky top-24 space-y-4">
+            <Card className="atelier-panel p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">Live Preview</p>
+                  <h2 className="mt-1 text-xl font-semibold">{template} Template</h2>
                 </div>
-              )}
+                <span className="rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground">Print-ready</span>
+              </div>
+            </Card>
+            <div className="max-h-[calc(100vh-9rem)] overflow-auto rounded-[28px] border border-border/70 bg-muted/25 p-4">
+              <ResumeView data={previewData} />
             </div>
           </div>
         </section>
       </main>
 
-      {shareUrl && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-background border shadow-lg rounded-lg p-4 flex items-center gap-4 animate-in slide-in-from-bottom-5 min-w-[500px] no-print">
-          <div className="flex items-center gap-3 flex-1">
-            <div className="text-sm font-medium whitespace-nowrap">Share Link:</div>
-            <Input value={shareUrl} readOnly className="h-9 text-sm" onClick={e => e.currentTarget.select()} />
+      {mobilePreview && (
+        <div className="fixed inset-0 z-40 bg-black/50 p-4 backdrop-blur-sm lg:hidden">
+          <div className="flex h-full flex-col rounded-[28px] bg-background">
+            <div className="flex items-center justify-between border-b px-4 py-3">
+              <div>
+                <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">Mobile Preview</p>
+                <h2 className="text-lg font-semibold">{template} Template</h2>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => setMobilePreview(false)}><X className="h-5 w-5" /></Button>
+            </div>
+            <div className="flex-1 overflow-auto bg-muted/30 p-4">
+              <div className="origin-top scale-[0.52] sm:scale-[0.68]">
+                <ResumeView data={previewData} />
+              </div>
+            </div>
           </div>
-          <div className="flex gap-3">
-            <div className="flex flex-col items-center gap-1">
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-9 w-9 p-0"
-                onClick={() => {
-                  navigator.clipboard.writeText(shareUrl)
-                  alert('链接已复制到剪贴板')
-                }}
-                title="copy"
-              >
-                <Copy className="h-4 w-4" />
-              </Button>
-              <span className="text-xs text-muted-foreground">copy</span>
-            </div>
-            <div className="flex flex-col items-center gap-1">
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-9 w-9 p-0"
-                onClick={() => window.open(shareUrl, '_blank')}
-                title="open"
-              >
-                <ExternalLink className="h-4 w-4" />
-              </Button>
-              <span className="text-xs text-muted-foreground">open</span>
-            </div>
-            <div className="flex flex-col items-center gap-1">
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-9 w-9 p-0"
-                onClick={() => setShareUrl('')}
-                title="close"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-              <span className="text-xs text-muted-foreground">close</span>
-            </div>
+        </div>
+      )}
+
+      {shareUrl && (
+        <div className="fixed bottom-4 left-1/2 z-50 flex min-w-[320px] max-w-[92vw] -translate-x-1/2 items-center gap-3 rounded-2xl border bg-background p-4 shadow-xl no-print md:min-w-[560px]">
+          <div className="min-w-0 flex-1">
+            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Share Link</p>
+            <Input value={shareUrl} readOnly className="mt-2 h-10" onClick={(event) => event.currentTarget.select()} />
+          </div>
+          <div className="flex gap-2">
+            <Button variant="ghost" size="icon" onClick={() => navigator.clipboard.writeText(shareUrl)}><Copy className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" onClick={() => window.open(shareUrl, '_blank')}><ExternalLink className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" onClick={() => setShareUrl('')}><X className="h-4 w-4" /></Button>
           </div>
         </div>
       )}
     </div>
   )
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return <label className="space-y-2"><span className="text-sm font-medium text-muted-foreground">{label}</span>{children}</label>
+}
+
+function SectionHeader({ icon: Icon, title, subtitle }: { icon: typeof User; title: string; subtitle: string }) {
+  return (
+    <div>
+      <div className="flex items-center gap-2 text-lg font-semibold text-primary">
+        <Icon className="h-5 w-5" />
+        <h3>{title}</h3>
+      </div>
+      <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
+    </div>
+  )
+}
+
+function StackCard({ id, icon, title, subtitle, children }: { id: string; icon: typeof Briefcase; title: string; subtitle: string; children: React.ReactNode }) {
+  return <Card id={id} className="atelier-panel p-6"><SectionHeader icon={icon} title={title} subtitle={subtitle} /><div className="mt-5 space-y-4">{children}</div></Card>
+}
+
+function ItemCard({ title, onRemove, children }: { title: string; onRemove: () => void; children: React.ReactNode }) {
+  return (
+    <Card className="border-border/70 bg-background/80 p-5">
+      <div className="mb-4 flex items-center justify-between">
+        <h4 className="font-medium">{title}</h4>
+        <Button variant="ghost" size="icon" onClick={onRemove}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+      </div>
+      {children}
+    </Card>
+  )
+}
+
+function EmptyState({ text }: { text: string }) {
+  return <div className="rounded-2xl border border-dashed border-border bg-muted/30 px-4 py-8 text-center text-sm text-muted-foreground">{text}</div>
+}
+
+function TagList({ items, onRemove }: { items: string[]; onRemove: (index: number) => void }) {
+  if (items.length === 0) return <EmptyState text="还没有添加任何标签。" />
+  return <div className="flex flex-wrap gap-2">{items.map((item, index) => <span key={`${item}-${index}`} className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium">{item}<button type="button" onClick={() => onRemove(index)} className="text-muted-foreground hover:text-destructive">×</button></span>)}</div>
 }

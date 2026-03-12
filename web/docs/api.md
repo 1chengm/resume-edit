@@ -217,6 +217,46 @@ Content-Type: application/json
 
 ---
 
+### JD 匹配分析
+
+```http
+POST /api/ai/jd-match
+Content-Type: application/json
+
+{
+  "resumeContent": { ... },
+  "jdText": "岗位描述全文",
+  "resumeId": "uuid",
+  "forceRematch": false
+}
+```
+
+使用 AI 对当前简历与目标 JD 做匹配评分，返回优势关键词、缺口关键词和可执行建议。支持结果缓存，相同简历内容与相同 JD 不会重复调用 AI。
+
+**请求参数**
+- `resumeContent` (必需): 简历内容对象
+- `jdText` (必需): 完整岗位描述文本
+- `resumeId` (可选): 简历 ID，用于权限校验与保存分析历史
+- `forceRematch` (可选): 强制重新匹配，忽略缓存
+
+**响应**
+```json
+{
+  "match_score": 82,
+  "strengths": ["React", "TypeScript", "Design System"],
+  "gaps": ["A/B Testing", "SQL"],
+  "recommendations": [
+    "在项目经历中补充与业务增长相关的量化结果",
+    "把设计系统经验写成跨团队协作成果"
+  ],
+  "is_cached": true,
+  "cached_at": "2024-01-01T00:00:00Z",
+  "cached_model": "openai"
+}
+```
+
+---
+
 ## 分享管理
 
 ### 创建分享链接

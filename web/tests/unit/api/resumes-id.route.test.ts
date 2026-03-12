@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { GET, PATCH, DELETE } from '@/app/api/resumes/[id]/route'
 import { requireApiUser } from '@/lib/auth/require-user'
 import { revalidateTag } from 'next/cache'
+import { mockUser } from './test-helpers'
 
 vi.mock('@/lib/auth/require-user', () => ({
   requireApiUser: vi.fn(),
@@ -117,7 +118,7 @@ describe('API /resumes/[id] authorization', () => {
     })
 
     mockedRequireApiUser.mockResolvedValueOnce({
-      user: { id: 'user-a' } as { id: string },
+      user: mockUser('user-a'),
       supabase: supabase as never,
       response: null,
     })
@@ -143,7 +144,7 @@ describe('API /resumes/[id] authorization', () => {
     })
 
     mockedRequireApiUser.mockResolvedValueOnce({
-      user: { id: 'user-a' } as { id: string },
+      user: mockUser('user-a'),
       supabase: supabase as never,
       response: null,
     })
@@ -163,7 +164,7 @@ describe('API /resumes/[id] authorization', () => {
     })
 
     mockedRequireApiUser.mockResolvedValueOnce({
-      user: { id: 'user-a' } as { id: string },
+      user: mockUser('user-a'),
       supabase: supabase as never,
       response: null,
     })
@@ -186,7 +187,7 @@ describe('API /resumes/[id] authorization', () => {
     })
 
     mockedRequireApiUser.mockResolvedValueOnce({
-      user: { id: 'user-z' } as { id: string },
+      user: mockUser('user-z'),
       supabase: supabase as never,
       response: null,
     })
@@ -211,7 +212,7 @@ describe('API /resumes/[id] authorization', () => {
     })
 
     mockedRequireApiUser.mockResolvedValueOnce({
-      user: { id: 'user-a' } as { id: string },
+      user: mockUser('user-a'),
       supabase: supabase as never,
       response: null,
     })
@@ -230,7 +231,7 @@ describe('API /resumes/[id] authorization', () => {
     })
 
     mockedRequireApiUser.mockResolvedValueOnce({
-      user: { id: 'owner-7' } as { id: string },
+      user: mockUser('owner-7'),
       supabase: supabase as never,
       response: null,
     })
